@@ -2,13 +2,10 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-# installer au niveau racine pour résoudre workspace:* (monorepo)
-cmds = ["cd .. && cd .. && npm install"]
+cmds = ["cd ../../ && npm install"]
 
 [phases.build]
-# build via racine pour bénéficier des workspaces
-cmds = ["cd .. && cd .. && npm run build --prefix apps/web"]
+cmds = ["cd ../../ && npm run build --prefix apps/web"]
 
 [variables]
-# servir le dossier de build depuis la racine du repo
 NIXPACKS_STATIC_DIR = "apps/web/dist"
