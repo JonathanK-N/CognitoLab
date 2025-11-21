@@ -1,0 +1,11 @@
+{
+  "name": "@cognitolab/simulator-core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {},
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+}

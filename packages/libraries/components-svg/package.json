@@ -1,0 +1,13 @@
+{
+  "name": "@cognitolab/components-svg",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "generate": "node generate-png.js"
+  },
+  "dependencies": {
+    "sharp": "^0.33.2"
+  }
+}

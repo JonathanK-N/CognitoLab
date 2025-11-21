@@ -1,0 +1,30 @@
+{
+  "kuka_iiwa7": {
+    "name": "KUKA LBR iiwa 7",
+    "vendor": "KUKA",
+    "urdfPath": "robots/urdf/kuka/iiwa7.urdf",
+    "meshesPath": "robots/meshes/kuka/iiwa7/",
+    "dof": 7
+  },
+  "fanuc_m710ic": {
+    "name": "Fanuc M-710iC",
+    "vendor": "Fanuc",
+    "urdfPath": "robots/urdf/fanuc/m710ic.urdf",
+    "meshesPath": "robots/meshes/fanuc/m710ic/",
+    "dof": 6
+  },
+  "ur5": {
+    "name": "Universal Robots UR5",
+    "vendor": "Universal Robots",
+    "urdfPath": "robots/urdf/universal_robot/ur5.urdf",
+    "meshesPath": "robots/meshes/universal_robot/ur5/",
+    "dof": 6
+  },
+  "mycobot_320": {
+    "name": "MyCobot 320",
+    "vendor": "Elephant Robotics",
+    "urdfPath": "robots/urdf/mycobot/mycobot_320.urdf",
+    "meshesPath": "robots/meshes/mycobot/320/",
+    "dof": 6
+  }
+}

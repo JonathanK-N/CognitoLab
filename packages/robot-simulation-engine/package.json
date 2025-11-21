@@ -1,0 +1,16 @@
+{
+  "name": "@cognitolab/robot-simulation-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "three": "^0.160.0",
+    "three-urdf-loader": "^0.10.3",
+    "zustand": "^4.5.0"
+  }
+}

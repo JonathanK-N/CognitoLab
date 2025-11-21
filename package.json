@@ -1,0 +1,24 @@
+{
+  "name": "cognitolab",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "robots"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "test": "turbo run test",
+    "generate:icons": "node packages/libraries/components-svg/generate-png.js"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "turbo": "^1.12.5",
+    "typescript": "^5.4.0"
+  }
+}

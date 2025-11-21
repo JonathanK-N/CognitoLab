@@ -1,0 +1,12 @@
+/node_modules
+/.turbo
+/.vscode
+/dist
+/build
+/coverage
+*.log
+*.cache
+package-lock.json
+.env
+.DS_Store
+/tmp
