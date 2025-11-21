@@ -2,10 +2,12 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm install"]
+# installer au niveau racine pour résoudre workspace:* (monorepo)
+cmds = ["cd .. && cd .. && npm install"]
 
 [phases.build]
-cmds = ["npm run build"]
+# build via la racine
+cmds = ["cd .. && cd .. && npm run build --prefix apps/api"]
 
 [start]
 cmd = "node dist/server.js"
