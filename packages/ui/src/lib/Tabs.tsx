@@ -11,16 +11,16 @@ type TabsProps = {
 
 export const Tabs: React.FC<TabsProps> = ({ tabs, selected, onSelect }) => (
   <div>
-    <div className="flex gap-2 border-b border-slate-200 mb-3">
+    <div className="flex gap-1 border-b border-cl-blue/10 mb-4">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onSelect(tab.id)}
           className={clsx(
-            "px-4 py-2 text-sm font-medium border-b-2",
+            "px-4 py-2.5 text-sm font-medium border-b-2 transition-all",
             selected === tab.id
-              ? "border-indigo-600 text-indigo-700"
-              : "border-transparent text-slate-600 hover:text-slate-800"
+              ? "border-cl-blue-3 text-cl-blue-3 bg-cl-blue/5"
+              : "border-transparent text-slate-500 hover:text-slate-300"
           )}
         >
           {tab.label}
