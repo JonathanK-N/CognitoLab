@@ -1,0 +1,46 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hexagon outer shape -->
+  <path d="M100 8 L175 50 L175 150 L100 192 L25 150 L25 50 Z"
+    stroke="#1976D2" stroke-width="6" fill="none" stroke-linejoin="round"/>
+  <!-- Inner hexagon glow -->
+  <path d="M100 22 L163 58 L163 142 L100 178 L37 142 L37 58 Z"
+    stroke="rgba(33,150,243,0.2)" stroke-width="1" fill="none"/>
+
+  <!-- Circuit lines (horizontal + vertical branches) -->
+  <!-- Center to top -->
+  <line x1="100" y1="100" x2="100" y2="42" stroke="#1976D2" stroke-width="3" stroke-linecap="round"/>
+  <!-- Center to bottom -->
+  <line x1="100" y1="100" x2="100" y2="158" stroke="#1976D2" stroke-width="3" stroke-linecap="round"/>
+  <!-- Center to left -->
+  <line x1="100" y1="100" x2="42" y2="100" stroke="#1976D2" stroke-width="3" stroke-linecap="round"/>
+  <!-- Center to right -->
+  <line x1="100" y1="100" x2="158" y2="100" stroke="#1976D2" stroke-width="3" stroke-linecap="round"/>
+  <!-- Center to top-left (elbow) -->
+  <polyline points="100,100 62,100 62,62" stroke="#1976D2" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Center to top-right (elbow) -->
+  <polyline points="100,100 138,100 138,62" stroke="#1976D2" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Center to bottom-left -->
+  <polyline points="100,100 62,100 62,138" stroke="#00BCD4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+  <!-- Center to bottom-right -->
+  <polyline points="100,100 138,100 138,138" stroke="#00BCD4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+
+  <!-- Central ring -->
+  <circle cx="100" cy="100" r="20" stroke="#1976D2" stroke-width="5" fill="none"/>
+  <circle cx="100" cy="100" r="26" stroke="rgba(33,150,243,0.25)" stroke-width="1.5" fill="none"/>
+
+  <!-- Node dots -->
+  <circle cx="100" cy="42" r="6" fill="#1976D2"/>
+  <circle cx="100" cy="158" r="6" fill="#1976D2"/>
+  <circle cx="42"  cy="100" r="6" fill="#1976D2"/>
+  <circle cx="158" cy="100" r="6" fill="#1976D2"/>
+  <circle cx="62"  cy="62"  r="5" fill="#2196F3"/>
+  <circle cx="138" cy="62"  r="5" fill="#2196F3"/>
+  <circle cx="62"  cy="138" r="4" fill="#00BCD4"/>
+  <circle cx="138" cy="138" r="4" fill="#00BCD4"/>
+
+  <!-- Glow rings on outer nodes -->
+  <circle cx="100" cy="42" r="9"  stroke="rgba(33,150,243,0.3)" stroke-width="1" fill="none"/>
+  <circle cx="42"  cy="100" r="9" stroke="rgba(33,150,243,0.3)" stroke-width="1" fill="none"/>
+  <circle cx="158" cy="100" r="9" stroke="rgba(33,150,243,0.3)" stroke-width="1" fill="none"/>
+  <circle cx="100" cy="158" r="9" stroke="rgba(33,150,243,0.3)" stroke-width="1" fill="none"/>
+</svg>
