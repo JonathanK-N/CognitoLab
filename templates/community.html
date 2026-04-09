@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Communauté{% endblock %}
+{% block page_title %}Communauté{% endblock %}
+
+{% block content %}
+<div class="space-y">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 class="section-title">Communauté</h1>
+      <p class="section-sub">Partagez vos projets et découvrez les créations de la communauté</p>
+    </div>
+    <button class="btn-primary" onclick="togglePostForm()">+ Partager un projet</button>
+  </div>
+
+  <!-- Formulaire de publication -->
+  <div id="postForm" style="display:none" class="glass-card">
+    <h3 style="font-size:0.875rem;font-weight:700;color:white;margin-bottom:14px">Partager un projet</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px">Titre</label>
+        <input id="postTitle" type="text" class="cl-input" style="width:100%" placeholder="Mon projet LED Matrix..." />
+      </div>
+      <div>
+        <label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px">Carte utilisée</label>
+        <input id="postBoard" type="text" class="cl-input" style="width:100%" placeholder="Arduino Uno, ESP32..." />
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px">Description</label>
+      <textarea id="postContent" class="cl-input" rows="3" style="width:100%;resize:vertical"
+        placeholder="Décrivez votre projet, les composants utilisés, les difficultés rencontrées..."></textarea>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px">Extrait de code (optionnel)</label>
+      <textarea id="postCode" class="code-area" rows="4" style="width:100%;resize:vertical;font-size:0.75rem"
+        placeholder="// Collez votre code ici..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-primary" onclick="submitPost()">Publier</button>
+      <button class="btn-ghost" onclick="togglePostForm()">Annuler</button>
+    </div>
+  </div>
+
+  <!-- Feed posts -->
+  <div id="postsFeed" style="display:flex;flex-direction:column;gap:16px">
+    {% for p in posts %}
+    <div class="glass-card community-post" data-id="{{ p.id }}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1565C0,#00BCD4);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;color:white;flex-shrink:0">
+            {{ p.author[0].upper() if p.author else 'U' }}
+          </div>
+          <div>
+            <p style="font-size:0.875rem;font-weight:600;color:white">{{ p.title }}</p>
+            <p style="font-size:0.7rem;color:#64748b">par {{ p.author or 'Anonyme' }} · {{ p.created_at.strftime('%d %b %Y') if p.created_at else '' }}</p>
+          </div>
+        </div>
+        {% if p.board %}
+        <span class="badge badge-blue">{{ p.board }}</span>
+        {% endif %}
+      </div>
+
+      <p style="font-size:0.8rem;color:#94a3b8;line-height:1.7;margin-bottom:12px">{{ p.content }}</p>
+
+      {% if p.code %}
+      <details style="margin-bottom:12px">
+        <summary style="font-size:0.75rem;color:#42A5F5;cursor:pointer;margin-bottom:6px">Voir le code</summary>
+        <pre class="code-area" style="font-size:0.72rem;overflow:auto;max-height:200px">{{ p.code }}</pre>
+      </details>
+      {% endif %}
+
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn-ghost" style="font-size:0.75rem;padding:5px 10px" onclick="likePost({{ p.id }}, this)">
+          ❤ <span class="like-count">{{ p.likes }}</span>
+        </button>
+        <button class="btn-ghost" style="font-size:0.75rem;padding:5px 10px" onclick="askCognitoPost('{{ p.title|e }}')">
+          🧠 Cognito
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if not posts %}
+    <div class="glass-card" style="text-align:center;padding:60px">
+      <div style="font-size:3rem;margin-bottom:12px">🌐</div>
+      <p style="color:#64748b;font-size:0.875rem">Aucun projet partagé pour l'instant.<br>Soyez le premier à partager !</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function togglePostForm() {
+  const form = document.getElementById('postForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function submitPost() {
+  const title   = document.getElementById('postTitle').value.trim();
+  const content = document.getElementById('postContent').value.trim();
+  const board   = document.getElementById('postBoard').value.trim();
+  const code    = document.getElementById('postCode').value.trim();
+  if (!title || !content) { alert('Titre et description requis.'); return; }
+  const res = await fetch('/api/community/posts', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title, content, board, code, author:'Vous'})
+  });
+  if (res.ok) location.reload();
+  else alert('Erreur lors de la publication.');
+}
+
+async function likePost(id, btn) {
+  const res  = await fetch(`/api/community/posts/${id}/like`, {method:'POST'});
+  const data = await res.json();
+  btn.querySelector('.like-count').textContent = data.likes;
+  btn.style.color = '#f472b6';
+}
+
+function askCognitoPost(title) {
+  toggleCognito();
+  setTimeout(() => {
+    document.getElementById('cognitoInput').value = `Dis-moi comment reproduire ou améliorer ce projet : "${title}"`;
+  }, 300);
+}
+</script>
+{% endblock %}

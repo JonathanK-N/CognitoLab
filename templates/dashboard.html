@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="space-y">
+
+  <!-- Hero -->
+  <div class="hero-card">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-glow"></div>
+    <canvas id="particleCanvas" class="hero-canvas"></canvas>
+    <div class="hero-content">
+      <div class="hero-badges">
+        <span class="badge badge-blue">v2.0</span>
+        <span class="badge badge-cyan">IA Cognito</span>
+        <span class="badge badge-green">Flask + PostgreSQL</span>
+      </div>
+      <h1 class="hero-title">Bienvenue sur <span class="gradient-text">CognitoLab</span></h1>
+      <p class="hero-sub">
+        La plateforme tout-en-un pour concevoir, simuler et programmer vos circuits et microcontrôleurs.
+        Accompagné de <strong>Cognito</strong>, votre assistant IA propulsé par Claude.
+      </p>
+      <div class="hero-actions">
+        <a href="/simulator" class="btn-primary">⚡ Démarrer une simulation</a>
+        <a href="/courses"   class="btn-ghost">📚 Explorer les cours</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    {% for s in [
+      ('⚡', '18+', 'Composants',  '#2196F3'),
+      ('📚', '8',   'Cours',        '#00BCD4'),
+      ('💻', projects_count|string, 'Projets', '#42A5F5'),
+      ('👥', posts_count|string,   'Posts',    '#00E5FF'),
+    ] %}
+    <div class="stat-card" style="--accent:{{ s[3] }}">
+      <div class="stat-icon">{{ s[0] }}</div>
+      <div class="stat-val" style="color:{{ s[3] }}">{{ s[1] }}</div>
+      <div class="stat-label">{{ s[2] }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Features -->
+  <div>
+    <h2 class="section-title">Fonctionnalités</h2>
+    <p class="section-sub">Tout ce dont vous avez besoin pour l'électronique et la programmation embarquée</p>
+    <div class="features-grid">
+      {% for f in [
+        ('/simulator',  '🔌', 'Simulateur de Circuits',   'Concevez et simulez vos circuits en temps réel — Wokwi intégré pour Arduino & ESP32.',   'TinkerCAD-like'),
+        ('/components', '🧩', 'Bibliothèque Composants',  'Explorez 18+ composants avec fiches techniques, câblage et code prêt à l\'emploi.', 'Interactive'),
+        ('/courses',    '🎓', 'Cours & eLearning',        'Apprenez Arduino, ESP32, Raspberry Pi, ROS, STM32 — du débutant à l\'expert.',          'eLearning'),
+        ('/projects',   '💻', 'Éditeur de Code',          'Compilez et simulez l\'exécution de code pour vos microcontrôleurs.', 'Compiler'),
+        ('/community',  '🌐', 'Communauté',               'Partagez vos projets et découvrez les créations de la communauté.', 'Social'),
+        ('/about',      'ℹ',  'À propos',                  'Découvrez la vision de CognitoLab et Cognito Inc.', 'Cognito Inc.'),
+      ] %}
+      <a href="{{ f[0] }}" class="feature-card">
+        <div class="feature-icon">{{ f[1] }}</div>
+        <div class="feature-body">
+          <div class="feature-head">
+            <span class="feature-title">{{ f[2] }}</span>
+            <span class="badge badge-blue">{{ f[4] }}</span>
+          </div>
+          <p class="feature-desc">{{ f[3] }}</p>
+        </div>
+        <div class="feature-arrow">Ouvrir →</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Bottom row -->
+  <div class="bottom-grid">
+    <!-- Activité récente -->
+    <div class="glass-card">
+      <div class="card-header">
+        <span class="dot-pulse"></span> Activité récente
+      </div>
+      <div class="activity-list">
+        {% for p in recent_projects %}
+        <div class="activity-row">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="dot-{{ 'online' if p.status=='done' else 'warn' }}"></span>
+            <span class="text-sm">{{ p.title }}</span>
+          </div>
+          <span class="text-xs text-muted">{{ p.board }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Progression cours -->
+    <div class="glass-card">
+      <div class="card-header">📈 Progression des cours</div>
+      {% for c in courses %}
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span class="text-sm">{{ c.title }}</span>
+          <span class="text-sm" style="color:#42A5F5">{{ progresses.get(c.id, 0) }}%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width:{{ progresses.get(c.id, 0) }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+      <a href="/courses" class="btn-ghost" style="width:100%;margin-top:8px;text-align:center;display:block">
+        Voir tous les cours →
+      </a>
+    </div>
+  </div>
+
+  <!-- Cognito CTA -->
+  <div class="cognito-cta">
+    <div class="cognito-cta-icon">
+      <svg viewBox="0 0 36 36" fill="none">
+        <circle cx="18" cy="18" r="7" stroke="white" stroke-width="2.5" fill="none"/>
+        <line x1="18" y1="4" x2="18" y2="11" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <line x1="18" y1="25" x2="18" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <line x1="4" y1="18" x2="11" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <line x1="25" y1="18" x2="32" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="18" cy="4"  r="2.5" fill="white"/>
+        <circle cx="18" cy="32" r="2.5" fill="white"/>
+        <circle cx="4"  cy="18" r="2.5" fill="white"/>
+        <circle cx="32" cy="18" r="2.5" fill="white"/>
+      </svg>
+    </div>
+    <h3>Cognito est là pour vous aider</h3>
+    <p>Posez vos questions sur l'électronique, la programmation embarquée, le débogage de circuits.</p>
+    <button class="btn-primary" onclick="toggleCognito()">🧠 Ouvrir Cognito</button>
+  </div>
+
+</div>
+
+<script>
+// Particle animation on hero canvas
+const canvas = document.getElementById('particleCanvas');
+if (canvas) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+  const nodes = Array.from({length:18}, () => ({
+    x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+    vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3,
+    r:Math.random()*2+1, p:Math.random()*Math.PI*2
+  }));
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    nodes.forEach(n => { n.x+=n.vx; n.y+=n.vy; n.p+=.03;
+      if(n.x<0||n.x>canvas.width) n.vx*=-1;
+      if(n.y<0||n.y>canvas.height) n.vy*=-1; });
+    for(let i=0;i<nodes.length;i++) for(let j=i+1;j<nodes.length;j++) {
+      const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.sqrt(dx*dx+dy*dy);
+      if(d<150){ ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y);
+        ctx.lineTo(nodes[j].x,nodes[j].y);
+        ctx.strokeStyle=`rgba(33,150,243,${.2*(1-d/150)})`; ctx.lineWidth=.8; ctx.stroke(); }
+    }
+    nodes.forEach(n => { const g=(Math.sin(n.p)+1)/2;
+      ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(33,150,243,${.4+g*.5})`; ctx.fill(); });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+</script>
+{% endblock %}

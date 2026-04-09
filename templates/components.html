@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Composants{% endblock %}
+{% block page_title %}Bibliothèque Composants{% endblock %}
+
+{% block content %}
+<div class="space-y">
+  <div>
+    <h1 class="section-title">Bibliothèque Composants</h1>
+    <p class="section-sub">Explorez chaque composant avec fiche technique, câblage et code</p>
+  </div>
+
+  <!-- Category filter -->
+  <div class="board-selector">
+    {% for cat in categories %}
+    <a href="/components?cat={{ cat }}" class="board-chip {% if selected_cat == cat %}active{% endif %}">{{ cat }}</a>
+    {% endfor %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+    <!-- Grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
+      {% for c in components %}
+      <a href="/components?cat={{ selected_cat }}&comp={{ c.id }}" class="comp-card {% if selected_comp and selected_comp.id == c.id %}selected{% endif %}">
+        <div style="font-size:2rem;margin-bottom:8px">{{ c.icon }}</div>
+        <p style="font-size:0.75rem;font-weight:700;color:white;line-height:1.3">{{ c.name }}</p>
+        <p style="font-size:0.7rem;color:#64748b;margin-top:2px">{{ c.category }}</p>
+        <div style="margin-top:8px"><span class="badge badge-blue">{{ c.voltage }}</span></div>
+      </a>
+      {% endfor %}
+      {% if not components %}
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:#64748b">
+        Aucun composant dans cette catégorie
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Detail panel -->
+    <div class="glass-card" style="position:sticky;top:80px;overflow:hidden;padding:0">
+      {% if selected_comp %}
+      <div style="padding:20px;background:linear-gradient(135deg,rgba(21,101,192,0.2),rgba(0,188,212,0.1))">
+        <div style="font-size:3rem;margin-bottom:10px">{{ selected_comp.icon }}</div>
+        <h3 style="font-weight:700;color:white;font-size:1rem">{{ selected_comp.name }}</h3>
+        <p style="font-size:0.75rem;color:#42A5F5;margin-top:2px">{{ selected_comp.category }}</p>
+      </div>
+      <div style="padding:16px">
+        <p style="font-size:0.8rem;color:#94a3b8;line-height:1.6;margin-bottom:14px">{{ selected_comp.desc }}</p>
+        <div style="margin-bottom:14px">
+          <p style="font-size:0.7rem;font-weight:600;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Spécifications</p>
+          <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px">
+            <span style="color:#64748b">Tension</span>
+            <span style="color:#42A5F5">{{ selected_comp.voltage }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.75rem">
+            <span style="color:#64748b">Catégorie</span>
+            <span style="color:#cbd5e1">{{ selected_comp.category }}</span>
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <p style="font-size:0.7rem;font-weight:600;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Code exemple</p>
+          <pre class="code-area" style="font-size:0.7rem;overflow:auto;max-height:150px">{{ selected_comp.code }}</pre>
+        </div>
+        <div style="display:flex;gap:8px">
+          <a href="/simulator" class="btn-primary" style="flex:1;text-align:center;font-size:0.75rem">⚡ Simuler</a>
+          <button class="btn-ghost" style="font-size:0.75rem" onclick="askCognito('{{ selected_comp.name }}')">🧠 Cognito</button>
+        </div>
+      </div>
+      {% else %}
+      <div style="padding:40px;text-align:center;color:#64748b">
+        <div style="font-size:3rem;margin-bottom:12px">🧩</div>
+        <p style="font-size:0.875rem">Sélectionnez un composant<br>pour voir sa fiche technique</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function askCognito(compName) {
+  toggleCognito();
+  setTimeout(() => {
+    document.getElementById('cognitoInput').value = `Explique-moi le composant ${compName} : comment le câbler et l'utiliser avec Arduino ?`;
+  }, 300);
+}
+</script>
+{% endblock %}

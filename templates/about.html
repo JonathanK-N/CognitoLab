@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}À propos{% endblock %}
+{% block page_title %}À propos{% endblock %}
+
+{% block content %}
+<div class="space-y">
+
+  <!-- Hero -->
+  <div class="hero-card" style="min-height:280px">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-content" style="text-align:center;padding:48px 32px">
+      <div style="display:flex;justify-content:center;margin-bottom:20px">
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#1565C0,#00BCD4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(33,150,243,0.4)">
+          <img src="/static/img/logo.svg" alt="CognitoLab" style="width:44px;height:44px"/>
+        </div>
+      </div>
+      <h1 class="hero-title" style="font-size:2rem">CognitoLab</h1>
+      <p class="hero-sub" style="max-width:500px;margin:0 auto">
+        La plateforme tout-en-un pour concevoir, simuler et apprendre l'électronique et la programmation embarquée.
+      </p>
+      <div class="hero-badges" style="justify-content:center;margin-top:16px">
+        <span class="badge badge-blue">v2.0</span>
+        <span class="badge badge-cyan">IA Cognito</span>
+        <span class="badge badge-green">Open Platform</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mission -->
+  <div class="glass-card">
+    <h2 style="font-size:1rem;font-weight:700;color:white;margin-bottom:12px">🎯 Notre mission</h2>
+    <p style="font-size:0.875rem;color:#94a3b8;line-height:1.8">
+      CognitoLab est né de la conviction que l'électronique et la programmation embarquée doivent être accessibles à tous.
+      Qu'il s'agisse d'un étudiant qui fait ses premiers pas avec Arduino, ou d'un ingénieur qui prototype un système ESP32
+      ou STM32, CognitoLab offre un environnement unifié : simulateur, bibliothèque de composants, cours interactifs,
+      éditeur de code et assistant IA.
+    </p>
+  </div>
+
+  <!-- Features cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
+    {% for item in [
+      ('🔌', 'Simulateur Wokwi', 'Simulation en temps réel de circuits Arduino et ESP32 directement dans le navigateur.'),
+      ('🧩', '18+ Composants', 'Fiches techniques détaillées, câblage et code prêt à l\'emploi pour chaque composant.'),
+      ('🎓', '8 Cours eLearning', 'Du débutant à l\'expert — Arduino, ESP32, Raspberry Pi, STM32, ROS.'),
+      ('🧠', 'Cognito IA', 'Assistant IA propulsé par Claude d\'Anthropic, spécialisé en électronique et microcontrôleurs.'),
+      ('💻', 'Éditeur de Code', 'Rédigez, sauvegardez et simulez vos programmes directement dans la plateforme.'),
+      ('🌐', 'Communauté', 'Partagez vos projets et apprenez des créations des autres membres.'),
+    ] %}
+    <div class="glass-card" style="text-align:center;padding:24px">
+      <div style="font-size:2.5rem;margin-bottom:10px">{{ item[0] }}</div>
+      <h3 style="font-size:0.875rem;font-weight:700;color:white;margin-bottom:6px">{{ item[1] }}</h3>
+      <p style="font-size:0.75rem;color:#64748b;line-height:1.6">{{ item[2] }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Stack technique -->
+  <div class="glass-card">
+    <h2 style="font-size:1rem;font-weight:700;color:white;margin-bottom:14px">⚙ Stack technique</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+      {% for tech, label, color in [
+        ('Python / Flask', 'Backend', '#4ade80'),
+        ('PostgreSQL', 'Base de données', '#60a5fa'),
+        ('Jinja2', 'Templates', '#f59e0b'),
+        ('Gunicorn', 'WSGI Server', '#a78bfa'),
+        ('Railway', 'Hébergement', '#fb923c'),
+        ('Wokwi', 'Simulation', '#34d399'),
+        ('Claude (Anthropic)', 'IA Cognito', '#42A5F5'),
+        ('Vanilla JS', 'Frontend', '#facc15'),
+      ] %}
+      <div style="padding:10px 14px;background:rgba(10,14,26,0.6);border-radius:10px;border:1px solid rgba(33,150,243,0.1)">
+        <p style="font-size:0.8rem;font-weight:600;color:{{ color }}">{{ tech }}</p>
+        <p style="font-size:0.7rem;color:#64748b;margin-top:2px">{{ label }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Cognito Inc. -->
+  <div class="glass-card" style="text-align:center;padding:40px;background:linear-gradient(135deg,rgba(21,101,192,0.15),rgba(0,188,212,0.08))">
+    <div style="display:flex;justify-content:center;margin-bottom:16px">
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1565C0,#00BCD4);display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 36 36" fill="none" style="width:32px;height:32px">
+          <circle cx="18" cy="18" r="7" stroke="white" stroke-width="2.5" fill="none"/>
+          <line x1="18" y1="4"  x2="18" y2="11" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="18" y1="25" x2="18" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="4"  y1="18" x2="11" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="25" y1="18" x2="32" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="18" cy="4"  r="2.5" fill="white"/>
+          <circle cx="18" cy="32" r="2.5" fill="white"/>
+          <circle cx="4"  cy="18" r="2.5" fill="white"/>
+          <circle cx="32" cy="18" r="2.5" fill="white"/>
+        </svg>
+      </div>
+    </div>
+    <h2 style="font-size:1.25rem;font-weight:800;color:white;margin-bottom:8px">Propulsé par Cognito Inc.</h2>
+    <p style="font-size:0.875rem;color:#94a3b8;line-height:1.7;max-width:480px;margin:0 auto 20px">
+      CognitoLab est un produit de <strong style="color:#42A5F5">Cognito Inc.</strong>, une entreprise dédiée à
+      démocratiser l'accès aux technologies embarquées grâce à l'intelligence artificielle.
+      Notre assistant Cognito, propulsé par Claude d'Anthropic, est au cœur de chaque interaction.
+    </p>
+    <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+      <span class="badge badge-blue">Cognito Inc. © 2025</span>
+      <span class="badge badge-cyan">Québec, Canada</span>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="text-align:center;padding:16px">
+    <a href="/" class="btn-primary" style="margin-right:10px">⚡ Commencer</a>
+    <button class="btn-ghost" onclick="toggleCognito()">🧠 Parler à Cognito</button>
+  </div>
+
+</div>
+{% endblock %}

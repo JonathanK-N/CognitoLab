@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Projets{% endblock %}
+{% block page_title %}Éditeur de Code{% endblock %}
+
+{% block content %}
+<div class="space-y">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 class="section-title">Éditeur de Code</h1>
+      <p class="section-sub">Compilez et simulez vos programmes pour microcontrôleurs</p>
+    </div>
+    <button class="btn-primary" onclick="openNewProject()">+ Nouveau projet</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start">
+
+    <!-- Sidebar projets -->
+    <div>
+      <div class="glass-card" style="padding:0;overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid rgba(33,150,243,0.1);font-size:0.8rem;font-weight:600;color:#cbd5e1">
+          Mes projets ({{ projects|length }})
+        </div>
+        <div id="projectList" style="max-height:360px;overflow-y:auto">
+          {% for p in projects %}
+          <div class="project-item {% if loop.first %}active{% endif %}" onclick="loadProject('{{ p.id }}','{{ p.title|e }}','{{ p.board }}',`{{ p.code|e }}`)" data-id="{{ p.id }}">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="dot-{{ 'online' if p.status=='done' else ('warn' if p.status=='wip' else 'offline') }}"></span>
+              <div>
+                <p style="font-size:0.8rem;font-weight:600;color:white">{{ p.title }}</p>
+                <p style="font-size:0.7rem;color:#64748b">{{ p.board }}</p>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% if not projects %}
+          <div style="padding:32px;text-align:center;color:#64748b;font-size:0.8rem">
+            Aucun projet.<br>Créez-en un !
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Board selector -->
+      <div class="glass-card" style="margin-top:12px">
+        <p style="font-size:0.75rem;font-weight:600;color:#cbd5e1;margin-bottom:10px">Carte cible</p>
+        <select id="boardSelect" class="cl-input" style="width:100%;font-size:0.8rem">
+          <option value="arduino-uno">Arduino Uno</option>
+          <option value="arduino-nano">Arduino Nano</option>
+          <option value="arduino-mega">Arduino Mega</option>
+          <option value="esp32">ESP32</option>
+          <option value="raspberry-pi">Raspberry Pi</option>
+          <option value="stm32">STM32</option>
+          <option value="rp2040">RP2040 (Pico)</option>
+        </select>
+        <div style="margin-top:10px;display:flex;gap:6px">
+          <button class="btn-primary" style="flex:1;font-size:0.75rem" onclick="compileCode()">▶ Compiler</button>
+          <button class="btn-ghost" style="font-size:0.75rem" onclick="askCognitoCode()">🧠</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor + Console -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- Title bar -->
+      <div class="glass-card" style="padding:10px 16px;display:flex;align-items:center;gap:12px">
+        <input id="projectTitle" type="text" class="cl-input" value="Nouveau projet"
+          style="flex:1;font-size:0.875rem;font-weight:600;background:transparent;border:none;padding:4px 0" />
+        <button class="btn-ghost" style="font-size:0.75rem" onclick="saveProject()">💾 Sauvegarder</button>
+        <button class="btn-ghost" style="font-size:0.75rem;color:#f87171" onclick="deleteProject()">🗑</button>
+      </div>
+
+      <!-- Code editor -->
+      <div class="glass-card" style="padding:0;overflow:hidden">
+        <div style="padding:8px 16px;border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.75rem;color:#64748b">
+          <span style="color:#42A5F5">●</span> main.ino
+          <span style="margin-left:auto;color:#42A5F5" id="langLabel">Arduino C++</span>
+        </div>
+        <textarea id="codeEditor" class="code-area"
+          style="width:100%;height:340px;resize:none;border:none;border-radius:0;font-size:0.8rem;line-height:1.7;padding:16px"
+          spellcheck="false"
+          placeholder="// Votre code ici...">void setup() {
+  Serial.begin(9600);
+  pinMode(LED_BUILTIN, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(1000);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(1000);
+  Serial.println("LED clignote !");
+}</textarea>
+      </div>
+
+      <!-- Console output -->
+      <div class="glass-card" style="padding:0;overflow:hidden">
+        <div style="padding:8px 16px;border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.75rem;color:#64748b">
+          <span>Console</span>
+          <button onclick="clearConsole()" style="margin-left:auto;background:none;border:none;color:#64748b;cursor:pointer;font-size:0.7rem">Effacer</button>
+        </div>
+        <div id="console" style="height:140px;overflow-y:auto;padding:12px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#94a3b8;background:rgba(10,14,26,0.6)">
+          <span style="color:#64748b">Prêt. Appuyez sur Compiler pour simuler l'exécution.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal nouveau projet -->
+  <div id="newProjectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center" onclick="closeModal(event)">
+    <div class="glass-card" style="width:380px;padding:24px" onclick="event.stopPropagation()">
+      <h3 style="font-size:1rem;font-weight:700;color:white;margin-bottom:16px">Nouveau projet</h3>
+      <label style="font-size:0.75rem;color:#94a3b8">Nom du projet</label>
+      <input id="newTitle" type="text" class="cl-input" style="width:100%;margin:6px 0 12px" placeholder="Mon projet Arduino" />
+      <label style="font-size:0.75rem;color:#94a3b8">Carte</label>
+      <select id="newBoard" class="cl-input" style="width:100%;margin:6px 0 16px">
+        <option value="arduino-uno">Arduino Uno</option>
+        <option value="arduino-nano">Arduino Nano</option>
+        <option value="esp32">ESP32</option>
+        <option value="raspberry-pi">Raspberry Pi</option>
+        <option value="stm32">STM32</option>
+      </select>
+      <div style="display:flex;gap:8px">
+        <button class="btn-primary" style="flex:1" onclick="createProject()">Créer</button>
+        <button class="btn-ghost" onclick="document.getElementById('newProjectModal').style.display='none'">Annuler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentProjectId = null;
+
+function openNewProject() {
+  document.getElementById('newProjectModal').style.display = 'flex';
+  document.getElementById('newTitle').focus();
+}
+function closeModal(e) {
+  if (e.target.id === 'newProjectModal') document.getElementById('newProjectModal').style.display = 'none';
+}
+
+async function createProject() {
+  const title = document.getElementById('newTitle').value.trim() || 'Nouveau projet';
+  const board = document.getElementById('newBoard').value;
+  const code  = document.getElementById('codeEditor').value;
+  const res   = await fetch('/api/projects', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title,board,code})});
+  const data  = await res.json();
+  document.getElementById('newProjectModal').style.display = 'none';
+  location.reload();
+}
+
+function loadProject(id, title, board, code) {
+  currentProjectId = id;
+  document.getElementById('projectTitle').value = title;
+  document.getElementById('boardSelect').value = board;
+  document.getElementById('codeEditor').value = code;
+  document.querySelectorAll('.project-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`[data-id="${id}"]`)?.classList.add('active');
+  logConsole('Projet chargé : ' + title, '#42A5F5');
+}
+
+async function saveProject() {
+  const title = document.getElementById('projectTitle').value;
+  const board = document.getElementById('boardSelect').value;
+  const code  = document.getElementById('codeEditor').value;
+  if (currentProjectId) {
+    await fetch(`/api/projects/${currentProjectId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title,board,code})});
+    logConsole('Projet sauvegardé.', '#4ade80');
+  } else {
+    const res  = await fetch('/api/projects', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title,board,code})});
+    const data = await res.json();
+    currentProjectId = data.id;
+    logConsole('Projet créé et sauvegardé.', '#4ade80');
+  }
+}
+
+async function deleteProject() {
+  if (!currentProjectId || !confirm('Supprimer ce projet ?')) return;
+  await fetch(`/api/projects/${currentProjectId}`, {method:'DELETE'});
+  location.reload();
+}
+
+async function compileCode() {
+  const code  = document.getElementById('codeEditor').value;
+  const board = document.getElementById('boardSelect').value;
+  logConsole('Compilation en cours...', '#fbbf24');
+  try {
+    const res  = await fetch('/api/ai/assist', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt:`Analyse ce code pour ${board} et simule son exécution. Donne la sortie Serial Monitor simulée et les éventuelles erreurs:\n\n${code}`, board})});
+    const data = await res.json();
+    logConsole('--- Simulation ---', '#42A5F5');
+    logConsole(data.answer || data.error || 'Erreur', '#e2e8f0');
+  } catch(e) {
+    logConsole('Erreur de compilation : ' + e.message, '#f87171');
+  }
+}
+
+function askCognitoCode() {
+  const code = document.getElementById('codeEditor').value;
+  toggleCognito();
+  setTimeout(() => {
+    document.getElementById('cognitoInput').value = `Peux-tu m'aider à améliorer ce code ?\n\n${code.substring(0,500)}`;
+  }, 300);
+}
+
+function logConsole(msg, color='#94a3b8') {
+  const con = document.getElementById('console');
+  con.innerHTML += `<div style="color:${color};margin-bottom:2px">&gt; ${msg.replace(/</g,'&lt;')}</div>`;
+  con.scrollTop = con.scrollHeight;
+}
+function clearConsole() {
+  document.getElementById('console').innerHTML = '<span style="color:#64748b">Console effacée.</span>';
+}
+</script>
+{% endblock %}

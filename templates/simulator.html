@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Simulateur{% endblock %}
+{% block page_title %}Simulateur de Circuits{% endblock %}
+
+{% block content %}
+<div class="space-y">
+  <div>
+    <h1 class="section-title">Simulateur de Circuits</h1>
+    <p class="section-sub">Choisissez une carte et simulez votre circuit en temps réel</p>
+  </div>
+
+  <!-- Board selector -->
+  <div class="board-selector">
+    {% for b in boards %}
+    <a href="/simulator?board={{ b.id }}"
+       class="board-chip {% if selected_board == b.id %}active{% endif %}"
+       title="{{ b.desc }}">
+      {{ b.icon }} {{ b.label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Selected board info -->
+  {% set board = boards | selectattr('id', 'equalto', selected_board) | first %}
+  {% if board %}
+  <div class="board-info-bar">
+    <span class="text-xl">{{ board.icon }}</span>
+    <div>
+      <p class="font-bold text-white">{{ board.label }}</p>
+      <p class="text-sm text-muted">{{ board.desc }}</p>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <span class="badge badge-blue">Simulation</span>
+      <span class="badge badge-cyan">Wokwi</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Simulator tabs -->
+  <div class="glass-card" style="overflow:hidden">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('sim',this)">🔌 Simulateur</button>
+      <button class="tab-btn"       onclick="switchTab('ai',this)">🧠 Cognito IA</button>
+    </div>
+
+    <!-- Simulator tab -->
+    <div id="tab-sim" class="tab-panel" style="padding:0">
+      {% if selected_board in ['arduino-uno','arduino-nano','arduino-mega','esp32'] %}
+      <div style="background:#000;height:520px;position:relative">
+        <iframe
+          src="https://wokwi.com/projects/new/{{ selected_board.replace('-','_') }}"
+          style="width:100%;height:100%;border:none"
+          title="Simulateur {{ selected_board }}"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms">
+        </iframe>
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:8px 12px;background:rgba(10,14,26,0.85);font-size:11px;color:#64748b">
+          Simulateur Wokwi — Ouvre dans un nouvel onglet si l'iframe est bloqué
+          <a href="https://wokwi.com/projects/new/{{ selected_board.replace('-','_') }}" target="_blank" style="color:#42A5F5;margin-left:8px">Ouvrir Wokwi ↗</a>
+        </div>
+      </div>
+      {% else %}
+      <div style="height:480px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(10,14,26,0.4)">
+        <div style="font-size:3rem">🔬</div>
+        <p style="font-weight:700;color:white">{{ board.label if board else selected_board }}</p>
+        <p style="color:#64748b;font-size:0.875rem;text-align:center;max-width:300px">
+          Simulation embarquée en développement.<br>
+          Utilisez Cognito IA pour générer du code pour cette carte.
+        </p>
+        <div style="display:flex;gap:8px">
+          <a href="https://renode.io" target="_blank" class="btn-ghost" style="font-size:0.8rem">Ouvrir Renode ↗</a>
+          <button class="btn-primary" style="font-size:0.8rem" onclick="switchTabById('ai')">🧠 Demander à Cognito</button>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- AI tab -->
+    <div id="tab-ai" class="tab-panel" style="display:none;padding:16px">
+      <div style="background:rgba(10,14,26,0.6);border-radius:12px;overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid rgba(33,150,243,0.1)">
+          <p class="text-sm font-bold" style="color:white">🧠 Cognito — Assistant pour {{ board.label if board else selected_board }}</p>
+        </div>
+        <div id="aiMessages" style="height:320px;overflow-y:auto;padding:16px">
+          <div class="msg msg-ai">
+            <div class="msg-bubble">
+              Je suis prêt à vous aider avec <strong>{{ board.label if board else selected_board }}</strong> !
+              Demandez-moi du code, du débogage, ou des explications sur les composants.
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px;border-top:1px solid rgba(33,150,243,0.1);display:flex;gap:8px">
+          <textarea id="aiInput" class="cl-input" rows="2"
+            placeholder="Question pour {{ board.label if board else selected_board }}..."
+            style="flex:1"
+            onkeydown="if(event.ctrlKey&&event.key==='Enter'){sendAI('{{ selected_board }}')}"></textarea>
+          <button class="btn-primary" onclick="sendAI('{{ selected_board }}')">Envoyer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.style.display='none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).style.display='block';
+  btn.classList.add('active');
+}
+function switchTabById(id) {
+  const btn = document.querySelector(`.tab-btn:nth-child(${id==='ai'?2:1})`);
+  switchTab(id, btn);
+}
+async function sendAI(board) {
+  const input = document.getElementById('aiInput');
+  const msgs  = document.getElementById('aiMessages');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  msgs.innerHTML += `<div class="msg msg-user"><div class="msg-bubble">${text}</div></div>`;
+  msgs.innerHTML += `<div class="msg msg-ai" id="aiTyping"><div class="msg-bubble"><span class="typing-dots"><span></span><span></span><span></span></span></div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+  try {
+    const res  = await fetch('/api/ai/assist', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:text,board})});
+    const data = await res.json();
+    document.getElementById('aiTyping').outerHTML = `<div class="msg msg-ai"><div class="msg-bubble">${formatMsg(data.answer||data.error||'Erreur')}</div></div>`;
+  } catch(e) {
+    document.getElementById('aiTyping').outerHTML = `<div class="msg msg-ai"><div class="msg-bubble" style="color:#f87171">Erreur de connexion</div></div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+</script>
+{% endblock %}
