@@ -2,7 +2,6 @@
 FROM node:20-alpine AS builder
 WORKDIR /monorepo
 
-# Manifests en premier pour le cache Docker
 COPY package.json ./
 COPY apps/api/package.json            ./apps/api/
 COPY apps/web/package.json            ./apps/web/
@@ -12,10 +11,12 @@ COPY packages/simulator-core/package.json                ./packages/simulator-co
 COPY packages/robot-simulation-engine/package.json       ./packages/robot-simulation-engine/
 COPY packages/libraries/components-svg/package.json      ./packages/libraries/components-svg/
 
-# npm install depuis la racine → résout workspace:*
+# "workspace:*" est syntaxe pnpm — remplacer par "*" pour npm standard
+RUN find . -name "package.json" ! -path "*/node_modules/*" \
+    -exec sed -i 's/"workspace:\*"/"*"/g' {} +
+
 RUN npm install
 
-# Source API + tsconfig de base
 COPY apps/api        ./apps/api
 COPY tsconfig.base.json ./
 
