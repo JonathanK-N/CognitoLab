@@ -1,0 +1,33 @@
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /monorepo
+
+# Copy workspace manifests first (Docker layer cache)
+COPY package.json ./
+COPY apps/api/package.json            ./apps/api/
+COPY apps/web/package.json            ./apps/web/
+COPY apps/mobile/package.json         ./apps/mobile/
+COPY packages/ui/package.json                            ./packages/ui/
+COPY packages/simulator-core/package.json                ./packages/simulator-core/
+COPY packages/robot-simulation-engine/package.json       ./packages/robot-simulation-engine/
+COPY packages/libraries/components-svg/package.json      ./packages/libraries/components-svg/
+
+# Install all workspace deps from root (resolves workspace:*)
+RUN npm install
+
+# Copy source
+COPY apps/api ./apps/api
+COPY tsconfig.base.json ./
+
+# Compile TypeScript
+RUN cd apps/api && npx tsc -p tsconfig.json
+
+# ── Stage 2: Production ────────────────────────────────────────────────────────
+FROM node:20-alpine
+WORKDIR /app
+
+COPY --from=builder /monorepo/apps/api/dist   ./dist
+COPY --from=builder /monorepo/node_modules    ./node_modules
+
+EXPOSE 4000
+CMD ["node", "dist/server.js"]

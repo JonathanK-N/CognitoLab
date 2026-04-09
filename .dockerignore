@@ -1,0 +1,14 @@
+node_modules
+*/node_modules
+**/node_modules
+dist
+**/dist
+.git
+.turbo
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+/tmp
+coverage
