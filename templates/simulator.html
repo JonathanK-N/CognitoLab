@@ -59,16 +59,55 @@
         </div>
       </div>
       {% else %}
-      <div style="height:480px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(10,14,26,0.4)">
-        <div style="font-size:3rem">🔬</div>
-        <p style="font-weight:700;color:white">{{ board.label if board else selected_board }}</p>
-        <p style="color:#64748b;font-size:0.875rem;text-align:center;max-width:300px">
-          Simulation embarquée en développement.<br>
-          Utilisez Cognito IA pour générer du code pour cette carte.
-        </p>
-        <div style="display:flex;gap:8px">
-          <a href="https://renode.io" target="_blank" class="btn-ghost" style="font-size:0.8rem">Ouvrir Renode ↗</a>
-          <button class="btn-primary" style="font-size:0.8rem" onclick="switchTabById('ai')">🧠 Demander à Cognito</button>
+      <div style="padding:24px;background:rgba(10,14,26,0.4)">
+        <!-- Renode info banner -->
+        <div style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(21,101,192,0.1);border:1px solid rgba(33,150,243,0.2);border-radius:12px;margin-bottom:20px">
+          <span style="font-size:2rem;flex-shrink:0">🔬</span>
+          <div>
+            <p style="font-weight:700;color:white;margin-bottom:2px">{{ board.label if board else selected_board }} — Simulation via Renode</p>
+            <p style="color:#64748b;font-size:0.78rem;line-height:1.5">
+              Renode est un simulateur embarqué open-source (desktop). Il ne peut pas s'ouvrir dans un navigateur —
+              installez-le localement et utilisez le script ci-dessous.
+            </p>
+          </div>
+          <a href="https://github.com/renode/renode/releases/latest" target="_blank" class="btn-primary" style="flex-shrink:0;font-size:0.75rem;white-space:nowrap">
+            ⬇ Télécharger Renode
+          </a>
+        </div>
+
+        <!-- Steps -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+          {% for step, desc in [
+            ('1. Installer', 'Téléchargez Renode depuis GitHub Releases et installez-le sur Windows / Linux / macOS.'),
+            ('2. Compiler', 'Compilez votre code avec PlatformIO ou arm-none-eabi-gcc pour générer le fichier .elf/.bin.'),
+            ('3. Lancer', 'Ouvrez Renode et chargez le script .resc ci-dessous pour démarrer la simulation.'),
+          ] %}
+          <div style="padding:14px;background:rgba(13,20,33,0.7);border:1px solid rgba(33,150,243,0.1);border-radius:10px">
+            <p style="font-size:0.75rem;font-weight:700;color:#42A5F5;margin-bottom:4px">{{ step }}</p>
+            <p style="font-size:0.72rem;color:#64748b;line-height:1.6">{{ desc }}</p>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Script Renode -->
+        <div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <p style="font-size:0.75rem;font-weight:600;color:#cbd5e1">Script Renode (.resc) pour {{ board.label if board else selected_board }}</p>
+            <button class="btn-ghost" style="font-size:0.7rem;padding:4px 10px" onclick="copyScript()">Copier</button>
+          </div>
+          <pre class="code-area" id="renodeScript" style="font-size:0.72rem;max-height:180px;overflow:auto">{{ renode_script }}</pre>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a href="https://github.com/renode/renode/releases/latest" target="_blank" class="btn-ghost" style="font-size:0.78rem">
+            🐙 GitHub Renode
+          </a>
+          <a href="https://renode.readthedocs.io" target="_blank" class="btn-ghost" style="font-size:0.78rem">
+            📖 Documentation
+          </a>
+          <button class="btn-primary" style="font-size:0.78rem" onclick="switchTabById('ai')">
+            🧠 Générer du code avec Cognito
+          </button>
         </div>
       </div>
       {% endif %}
@@ -101,6 +140,16 @@
 </div>
 
 <script>
+function copyScript() {
+  const text = document.getElementById('renodeScript')?.innerText;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copié !';
+    setTimeout(() => btn.textContent = 'Copier', 2000);
+  });
+}
+
 function switchTab(id, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.style.display='none');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));

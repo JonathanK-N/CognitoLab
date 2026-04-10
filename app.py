@@ -192,10 +192,73 @@ def dashboard():
         recent_projects=recent_projects,
         courses=COURSES[:3])
 
+RENODE_SCRIPTS = {
+    "stm32f103": """\
+# Renode script — STM32F103 (Blue Pill)
+using sysbus
+mach create "stm32f103"
+machine LoadPlatformDescription @platforms/boards/stm32f103c8.repl
+
+# Charger votre firmware compilé (.elf)
+sysbus LoadELF @firmware.elf
+
+# UART → console
+showAnalyzer sysbus.usart1
+
+# Démarrer
+start""",
+    "rp2040": """\
+# Renode script — RP2040 (Raspberry Pi Pico)
+using sysbus
+mach create "rp2040"
+machine LoadPlatformDescription @platforms/boards/rp2040.repl
+
+# Charger votre firmware (.elf)
+sysbus LoadELF @firmware.elf
+
+# UART0 → console
+showAnalyzer sysbus.uart0
+
+start""",
+    "pico": """\
+# Renode script — Raspberry Pi Pico (RP2040)
+using sysbus
+mach create "pico"
+machine LoadPlatformDescription @platforms/boards/rp2040.repl
+
+sysbus LoadELF @firmware.elf
+showAnalyzer sysbus.uart0
+start""",
+    "raspberry-pi": """\
+# Renode ne simule pas Raspberry Pi OS complet.
+# Utilisez QEMU pour émuler le Raspberry Pi :
+#
+#   qemu-system-aarch64 \\
+#     -M raspi3b \\
+#     -kernel kernel8.img \\
+#     -drive file=raspi.img,format=raw \\
+#     -serial stdio
+#
+# Téléchargez QEMU : https://www.qemu.org/download/""",
+}
+
+DEFAULT_RENODE_SCRIPT = """\
+# Renode script générique
+using sysbus
+mach create "{board}"
+# machine LoadPlatformDescription @platforms/boards/VOTRE_CARTE.repl
+
+# Chargez votre firmware compilé :
+# sysbus LoadELF @firmware.elf
+
+# Consultez : https://renode.readthedocs.io/en/latest/basic/machines.html
+start"""
+
 @app.route("/simulator")
 def simulator():
     board = request.args.get("board", "arduino-uno")
-    return render_template("simulator.html", boards=BOARDS, selected_board=board)
+    script = RENODE_SCRIPTS.get(board, DEFAULT_RENODE_SCRIPT.format(board=board))
+    return render_template("simulator.html", boards=BOARDS, selected_board=board, renode_script=script)
 
 @app.route("/courses")
 def courses():
