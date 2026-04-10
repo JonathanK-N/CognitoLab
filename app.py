@@ -1,7 +1,14 @@
 import os
+import uuid
+import time
+import queue
+import socket
+import tempfile
+import threading
+import subprocess
 import requests
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, Response, stream_with_context
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 
@@ -20,6 +27,248 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.secret_key = os.environ.get("SECRET_KEY", "cognitolab-dev-key")
 
 db = SQLAlchemy(app)
+
+# ── Simulation Manager ─────────────────────────────────────────────────────────
+# Configs par carte : platform Renode, nom UART, port UART socket, firmware démo
+BOARD_SIM_CONFIG = {
+    "stm32f103": {
+        "platform": "platforms/boards/stm32f103c8.repl",
+        "uart":     "usart1",
+        "demo_fw":  "/app/firmwares/stm32f103_demo.elf",
+        "label":    "STM32F103 (Blue Pill)",
+    },
+    "stm32f103": {
+        "platform": "platforms/boards/stm32f4_discovery.repl",
+        "uart":     "usart2",
+        "demo_fw":  "/app/firmwares/stm32f4_demo.elf",
+        "label":    "STM32F4 Discovery",
+    },
+    "rp2040": {
+        "platform": "platforms/boards/rp2040.repl",
+        "uart":     "uart0",
+        "demo_fw":  "/app/firmwares/rp2040_demo.elf",
+        "label":    "RP2040 (Raspberry Pi Pico)",
+    },
+    "pico": {
+        "platform": "platforms/boards/rp2040.repl",
+        "uart":     "uart0",
+        "demo_fw":  "/app/firmwares/rp2040_demo.elf",
+        "label":    "Raspberry Pi Pico",
+    },
+}
+
+class SimulationManager:
+    MAX_SESSIONS   = 15        # Railway Pro 8GB → ~20 possible, on garde 15 pour la sécurité
+    TIMEOUT_SEC    = 300       # 5 min par session
+    PORT_RANGE     = (4100, 4999)
+
+    def __init__(self):
+        self.sessions  = {}    # session_id → {process, q, board, created_at, uart_port}
+        self.lock      = threading.Lock()
+        self._next_port = self.PORT_RANGE[0]
+
+    # ── Port pool ──────────────────────────────────────────────────────────────
+    def _alloc_port(self):
+        with self.lock:
+            port = self._next_port
+            self._next_port += 1
+            if self._next_port > self.PORT_RANGE[1]:
+                self._next_port = self.PORT_RANGE[0]
+        return port
+
+    # ── Génère le script Renode (.resc) ───────────────────────────────────────
+    def _make_resc(self, board, firmware_path, uart_port, session_id):
+        cfg = BOARD_SIM_CONFIG.get(board)
+        if not cfg:
+            # Fallback générique STM32F4
+            cfg = BOARD_SIM_CONFIG["stm32f103"]
+
+        fw = firmware_path or cfg["demo_fw"]
+        return f"""\
+using sysbus
+
+mach create "sim_{session_id}"
+machine LoadPlatformDescription @{cfg['platform']}
+
+sysbus LoadELF @{fw}
+
+# Expose UART via socket TCP — Python s'y connecte pour streamer la sortie
+emulation CreateServerSocketTerminal {uart_port} "uart_{session_id}" false
+connector Connect sysbus.{cfg['uart']} uart_{session_id}
+
+start
+"""
+
+    # ── Lance une simulation ──────────────────────────────────────────────────
+    def start(self, board, firmware_path=None):
+        with self.lock:
+            if len(self.sessions) >= self.MAX_SESSIONS:
+                return None, f"Limite de {self.MAX_SESSIONS} simulations simultanées atteinte — réessayez dans quelques instants."
+
+        session_id = uuid.uuid4().hex[:8]
+        uart_port  = self._alloc_port()
+        q          = queue.Queue(maxsize=1000)
+
+        # Écrire le script .resc dans /tmp
+        script_path = f"/tmp/renode_{session_id}.resc"
+        with open(script_path, "w") as f:
+            f.write(self._make_resc(board, firmware_path, uart_port, session_id))
+
+        with self.lock:
+            self.sessions[session_id] = {
+                "process":    None,
+                "q":          q,
+                "board":      board,
+                "created_at": time.time(),
+                "uart_port":  uart_port,
+                "alive":      True,
+            }
+
+        t = threading.Thread(target=self._worker, args=(session_id, script_path, uart_port, q), daemon=True)
+        t.start()
+
+        # Timeout automatique
+        threading.Thread(target=self._auto_timeout, args=(session_id,), daemon=True).start()
+
+        return session_id, None
+
+    # ── Worker thread : lance Renode + lit UART ───────────────────────────────
+    def _worker(self, session_id, script_path, uart_port, q):
+        proc = None
+        sock = None
+        try:
+            q.put("[CognitoLab] Démarrage de Renode...")
+
+            proc = subprocess.Popen(
+                ["renode", "--disable-xwt", "--console", script_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+
+            with self.lock:
+                if session_id in self.sessions:
+                    self.sessions[session_id]["process"] = proc
+
+            # Attendre que Renode ouvre le socket UART (max 10s)
+            q.put("[CognitoLab] Initialisation du circuit...")
+            connected = False
+            for _ in range(20):
+                time.sleep(0.5)
+                try:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.connect(("127.0.0.1", uart_port))
+                    connected = True
+                    break
+                except OSError:
+                    sock.close()
+                    sock = None
+
+            if not connected:
+                q.put("[CognitoLab] ⚠ Impossible de connecter au UART — vérifiez le firmware")
+                q.put(None)
+                return
+
+            q.put("[CognitoLab] ✓ Simulation active — sortie UART :")
+            q.put("─" * 48)
+
+            sock.settimeout(1.0)
+            buf = b""
+            while True:
+                with self.lock:
+                    if session_id not in self.sessions:
+                        break
+                try:
+                    chunk = sock.recv(256)
+                    if not chunk:
+                        break
+                    buf += chunk
+                    # Découper par lignes
+                    while b"\n" in buf:
+                        line, buf = buf.split(b"\n", 1)
+                        text = line.decode("utf-8", errors="replace").rstrip()
+                        if text:
+                            q.put(text)
+                except socket.timeout:
+                    continue
+                except Exception:
+                    break
+
+        except FileNotFoundError:
+            q.put("[ERREUR] Renode n'est pas installé dans ce conteneur.")
+        except Exception as e:
+            q.put(f"[ERREUR] {e}")
+        finally:
+            q.put(None)
+            if sock:
+                try: sock.close()
+                except: pass
+            if proc:
+                try: proc.terminate()
+                except: pass
+            with self.lock:
+                self.sessions.pop(session_id, None)
+            try: os.remove(script_path)
+            except: pass
+
+    # ── SSE generator ─────────────────────────────────────────────────────────
+    def stream(self, session_id):
+        with self.lock:
+            if session_id not in self.sessions:
+                yield "data: [Session introuvable ou expirée]\n\n"
+                return
+
+        q = self.sessions[session_id]["q"]
+        last_ping = time.time()
+
+        while True:
+            try:
+                line = q.get(timeout=15)
+                if line is None:
+                    yield "data: [Simulation terminée]\n\n"
+                    yield "event: done\ndata: done\n\n"
+                    break
+                # Échapper pour SSE (pas de newlines dans data:)
+                safe = line.replace("\r", "").replace("\n", " ")
+                yield f"data: {safe}\n\n"
+            except queue.Empty:
+                # Keepalive ping toutes les 15s pour éviter timeout Railway
+                yield ": ping\n\n"
+
+    # ── Arrêter une session ────────────────────────────────────────────────────
+    def stop(self, session_id):
+        with self.lock:
+            session = self.sessions.pop(session_id, None)
+        if session:
+            proc = session.get("process")
+            if proc:
+                try: proc.terminate()
+                except: pass
+
+    # ── Timeout auto ──────────────────────────────────────────────────────────
+    def _auto_timeout(self, session_id):
+        time.sleep(self.TIMEOUT_SEC)
+        if session_id in self.sessions:
+            with self.lock:
+                q = self.sessions.get(session_id, {}).get("q")
+            if q:
+                q.put("[CognitoLab] ⏱ Timeout 5 min — simulation arrêtée automatiquement.")
+                q.put(None)
+            self.stop(session_id)
+
+    # ── Statut global ──────────────────────────────────────────────────────────
+    def status(self):
+        with self.lock:
+            return {
+                "active": len(self.sessions),
+                "max":    self.MAX_SESSIONS,
+                "slots_free": self.MAX_SESSIONS - len(self.sessions),
+                "sessions": [
+                    {"id": sid, "board": s["board"], "age_s": int(time.time() - s["created_at"])}
+                    for sid, s in self.sessions.items()
+                ],
+            }
+
+sim_manager = SimulationManager()
 
 # ── Models ─────────────────────────────────────────────────────────────────────
 class Project(db.Model):
@@ -446,6 +695,52 @@ def api_update_progress(course_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 503
+
+# ── Simulation API ─────────────────────────────────────────────────────────────
+@app.route("/api/simulate/start", methods=["POST"])
+def api_sim_start():
+    data     = request.get_json() or {}
+    board    = data.get("board", "stm32f103")
+    firmware = data.get("firmware_path")  # optionnel, chemin local après upload
+    session_id, error = sim_manager.start(board, firmware)
+    if error:
+        return jsonify({"error": error}), 503
+    return jsonify({"session_id": session_id, "board": board})
+
+@app.route("/api/simulate/stream/<session_id>")
+def api_sim_stream(session_id):
+    def generate():
+        yield from sim_manager.stream(session_id)
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control":     "no-cache",
+            "X-Accel-Buffering": "no",   # désactive le buffering Nginx/Railway
+            "Connection":        "keep-alive",
+        },
+    )
+
+@app.route("/api/simulate/stop/<session_id>", methods=["POST"])
+def api_sim_stop(session_id):
+    sim_manager.stop(session_id)
+    return jsonify({"ok": True})
+
+@app.route("/api/simulate/upload", methods=["POST"])
+def api_sim_upload():
+    if "firmware" not in request.files:
+        return jsonify({"error": "Champ 'firmware' manquant"}), 400
+    f = request.files["firmware"]
+    if not f.filename.lower().endswith(".elf"):
+        return jsonify({"error": "Seuls les fichiers .elf sont acceptés"}), 400
+    safe_name = f"fw_{uuid.uuid4().hex[:8]}.elf"
+    path = os.path.join(tempfile.gettempdir(), safe_name)
+    f.save(path)
+    return jsonify({"firmware_path": path, "filename": f.filename})
+
+@app.route("/api/simulate/status")
+def api_sim_status():
+    return jsonify(sim_manager.status())
 
 # ── Run ────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

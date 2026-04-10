@@ -59,55 +59,58 @@
         </div>
       </div>
       {% else %}
-      <div style="padding:24px;background:rgba(10,14,26,0.4)">
-        <!-- Renode info banner -->
-        <div style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(21,101,192,0.1);border:1px solid rgba(33,150,243,0.2);border-radius:12px;margin-bottom:20px">
-          <span style="font-size:2rem;flex-shrink:0">🔬</span>
-          <div>
-            <p style="font-weight:700;color:white;margin-bottom:2px">{{ board.label if board else selected_board }} — Simulation via Renode</p>
-            <p style="color:#64748b;font-size:0.78rem;line-height:1.5">
-              Renode est un simulateur embarqué open-source (desktop). Il ne peut pas s'ouvrir dans un navigateur —
-              installez-le localement et utilisez le script ci-dessous.
-            </p>
+      <!-- ── Renode embarqué (côté serveur) ── -->
+      <div style="padding:20px;background:rgba(10,14,26,0.4)">
+
+        <!-- Barre de statut -->
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(21,101,192,0.1);border:1px solid rgba(33,150,243,0.2);border-radius:12px;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <span style="font-size:1.5rem">🔬</span>
+          <div style="flex:1">
+            <p style="font-weight:700;color:white;font-size:0.875rem">{{ board.label if board else selected_board }} — Renode embarqué</p>
+            <p style="color:#64748b;font-size:0.72rem">Renode tourne sur le serveur · sortie UART en temps réel</p>
           </div>
-          <a href="https://github.com/renode/renode/releases/latest" target="_blank" class="btn-primary" style="flex-shrink:0;font-size:0.75rem;white-space:nowrap">
-            ⬇ Télécharger Renode
-          </a>
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748b" id="simStatusBadge">
+            <span class="dot-offline" id="simDot"></span>
+            <span id="simStatusText">Inactif</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <!-- Upload firmware -->
+            <label class="btn-ghost" style="font-size:0.75rem;cursor:pointer;padding:7px 12px">
+              📁 Charger .elf
+              <input type="file" accept=".elf" id="firmwareInput" style="display:none" onchange="uploadFirmware(this)">
+            </label>
+            <button id="btnStart" class="btn-primary" style="font-size:0.75rem" onclick="startSim('{{ selected_board }}')">
+              ▶ Démarrer démo
+            </button>
+            <button id="btnStop" class="btn-ghost" style="font-size:0.75rem;display:none" onclick="stopSim()">
+              ⏹ Arrêter
+            </button>
+          </div>
         </div>
 
-        <!-- Steps -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px">
-          {% for step, desc in [
-            ('1. Installer', 'Téléchargez Renode depuis GitHub Releases et installez-le sur Windows / Linux / macOS.'),
-            ('2. Compiler', 'Compilez votre code avec PlatformIO ou arm-none-eabi-gcc pour générer le fichier .elf/.bin.'),
-            ('3. Lancer', 'Ouvrez Renode et chargez le script .resc ci-dessous pour démarrer la simulation.'),
-          ] %}
-          <div style="padding:14px;background:rgba(13,20,33,0.7);border:1px solid rgba(33,150,243,0.1);border-radius:10px">
-            <p style="font-size:0.75rem;font-weight:700;color:#42A5F5;margin-bottom:4px">{{ step }}</p>
-            <p style="font-size:0.72rem;color:#64748b;line-height:1.6">{{ desc }}</p>
-          </div>
-          {% endfor %}
+        <!-- Infos firmware chargé -->
+        <div id="fwInfo" style="display:none;padding:8px 14px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:8px;margin-bottom:12px;font-size:0.75rem;color:#4ade80">
+          ✓ Firmware : <span id="fwName"></span>
         </div>
 
-        <!-- Script Renode -->
-        <div style="margin-bottom:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <p style="font-size:0.75rem;font-weight:600;color:#cbd5e1">Script Renode (.resc) pour {{ board.label if board else selected_board }}</p>
-            <button class="btn-ghost" style="font-size:0.7rem;padding:4px 10px" onclick="copyScript()">Copier</button>
+        <!-- Terminal xterm.js -->
+        <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(33,150,243,0.15);margin-bottom:12px">
+          <div style="padding:8px 14px;background:rgba(5,8,16,0.9);border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.72rem;color:#64748b">
+            <span style="color:#f87171">●</span>
+            <span style="color:#fbbf24">●</span>
+            <span style="color:#4ade80">●</span>
+            <span style="margin-left:8px">UART Monitor — {{ board.label if board else selected_board }}</span>
+            <button onclick="clearTerminal()" style="margin-left:auto;background:none;border:none;color:#475569;cursor:pointer;font-size:0.7rem">Effacer</button>
           </div>
-          <pre class="code-area" id="renodeScript" style="font-size:0.72rem;max-height:180px;overflow:auto">{{ renode_script }}</pre>
+          <div id="terminal" style="height:320px;background:#050810;padding:12px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:0.78rem;line-height:1.7;color:#e2e8f0"></div>
         </div>
 
+        <!-- Actions secondaires -->
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <a href="https://github.com/renode/renode/releases/latest" target="_blank" class="btn-ghost" style="font-size:0.78rem">
-            🐙 GitHub Renode
-          </a>
-          <a href="https://renode.readthedocs.io" target="_blank" class="btn-ghost" style="font-size:0.78rem">
-            📖 Documentation
-          </a>
-          <button class="btn-primary" style="font-size:0.78rem" onclick="switchTabById('ai')">
+          <button class="btn-ghost" style="font-size:0.75rem" onclick="switchTabById('ai')">
             🧠 Générer du code avec Cognito
           </button>
+          <span id="slotInfo" style="margin-left:auto;font-size:0.72rem;color:#475569;align-self:center"></span>
         </div>
       </div>
       {% endif %}
@@ -140,16 +143,139 @@
 </div>
 
 <script>
-function copyScript() {
-  const text = document.getElementById('renodeScript')?.innerText;
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = event.target;
-    btn.textContent = 'Copié !';
-    setTimeout(() => btn.textContent = 'Copier', 2000);
-  });
+// ── Simulation Renode ──────────────────────────────────────────────────────────
+let currentSessionId  = null;
+let currentEventSource = null;
+let uploadedFirmware  = null;
+
+function termLine(text, color) {
+  const term = document.getElementById('terminal');
+  if (!term) return;
+  const line = document.createElement('div');
+  line.style.color = color || '#e2e8f0';
+  line.textContent = text;
+  term.appendChild(line);
+  term.scrollTop = term.scrollHeight;
 }
 
+function clearTerminal() {
+  const term = document.getElementById('terminal');
+  if (term) term.innerHTML = '';
+}
+
+function setSimStatus(state) {
+  // state: 'idle' | 'running' | 'error'
+  const dot  = document.getElementById('simDot');
+  const text = document.getElementById('simStatusText');
+  const btnStart = document.getElementById('btnStart');
+  const btnStop  = document.getElementById('btnStop');
+  if (!dot) return;
+  const map = {
+    idle:    { cls: 'dot-offline', label: 'Inactif',       start: true,  stop: false },
+    running: { cls: 'dot-online',  label: 'En cours...',   start: false, stop: true  },
+    error:   { cls: 'dot-warn',    label: 'Erreur',        start: true,  stop: false },
+  };
+  const cfg = map[state] || map.idle;
+  dot.className  = cfg.cls;
+  text.textContent = cfg.label;
+  if (btnStart) btnStart.style.display = cfg.start ? '' : 'none';
+  if (btnStop)  btnStop.style.display  = cfg.stop  ? '' : 'none';
+}
+
+async function uploadFirmware(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('firmware', file);
+  termLine('[Upload] Envoi du firmware...', '#fbbf24');
+  try {
+    const res  = await fetch('/api/simulate/upload', {method:'POST', body: fd});
+    const data = await res.json();
+    if (data.firmware_path) {
+      uploadedFirmware = data.firmware_path;
+      document.getElementById('fwInfo').style.display = 'block';
+      document.getElementById('fwName').textContent   = data.filename;
+      document.getElementById('btnStart').textContent  = '▶ Simuler firmware';
+      termLine(`[Upload] ✓ ${data.filename} prêt`, '#4ade80');
+    } else {
+      termLine(`[Upload] Erreur : ${data.error}`, '#f87171');
+    }
+  } catch(e) {
+    termLine(`[Upload] Erreur réseau : ${e.message}`, '#f87171');
+  }
+}
+
+async function startSim(board) {
+  if (currentSessionId) await stopSim();
+  clearTerminal();
+  setSimStatus('running');
+  termLine('[CognitoLab] Connexion au serveur de simulation...', '#42A5F5');
+
+  try {
+    const body = {board};
+    if (uploadedFirmware) body.firmware_path = uploadedFirmware;
+
+    const res  = await fetch('/api/simulate/start', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (data.error) {
+      termLine(`[Erreur] ${data.error}`, '#f87171');
+      setSimStatus('error');
+      return;
+    }
+
+    currentSessionId = data.session_id;
+    termLine(`[CognitoLab] Session ${currentSessionId} — carte : ${data.board}`, '#64748b');
+
+    // SSE stream
+    currentEventSource = new EventSource(`/api/simulate/stream/${currentSessionId}`);
+    currentEventSource.onmessage = (e) => {
+      const txt = e.data;
+      if (txt === '[ping]' || txt.startsWith(': ')) return;
+      const color = txt.startsWith('[CognitoLab]') ? '#42A5F5'
+                  : txt.startsWith('[ERREUR]')     ? '#f87171'
+                  : txt.startsWith('[warn]')       ? '#fbbf24'
+                  : '#e2e8f0';
+      termLine(txt, color);
+    };
+    currentEventSource.addEventListener('done', () => {
+      setSimStatus('idle');
+      currentSessionId = null;
+      currentEventSource?.close();
+      currentEventSource = null;
+    });
+    currentEventSource.onerror = () => {
+      termLine('[CognitoLab] Connexion SSE perdue.', '#f87171');
+      setSimStatus('error');
+    };
+
+  } catch(e) {
+    termLine(`[Erreur] ${e.message}`, '#f87171');
+    setSimStatus('error');
+  }
+
+  // Afficher slots libres
+  try {
+    const s = await (await fetch('/api/simulate/status')).json();
+    const el = document.getElementById('slotInfo');
+    if (el) el.textContent = `${s.active}/${s.max} simulations actives`;
+  } catch {}
+}
+
+async function stopSim() {
+  if (!currentSessionId) return;
+  currentEventSource?.close();
+  currentEventSource = null;
+  await fetch(`/api/simulate/stop/${currentSessionId}`, {method:'POST'}).catch(()=>{});
+  termLine('[CognitoLab] Simulation arrêtée.', '#64748b');
+  currentSessionId = null;
+  setSimStatus('idle');
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────────
 function switchTab(id, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.style.display='none');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
