@@ -28,6 +28,11 @@ RUN wget -q "https://github.com/renode/renode/releases/download/v${RENODE_VERSIO
     dpkg -i /tmp/renode.deb || apt-get install -f -y && \
     rm /tmp/renode.deb
 
+# ── Arduino CLI + AVR toolchain (pour compilation Arduino côté serveur) ──────
+RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
+# Pré-télécharger le core AVR (ATmega328P, Arduino Uno/Nano/Mega) — mis en cache dans cette layer Docker
+RUN arduino-cli core install arduino:avr --additional-urls ""
+
 # ── Firmwares démo Zephyr pré-compilés (CDN Antmicro/Renode) ────────────────
 RUN mkdir -p /app/firmwares
 

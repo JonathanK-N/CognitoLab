@@ -696,6 +696,57 @@ def api_update_progress(course_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 503
 
+# ── Arduino Compilation API ────────────────────────────────────────────────────
+@app.route("/api/compile/arduino", methods=["POST"])
+def compile_arduino():
+    import tempfile, subprocess, glob
+    data = request.get_json() or {}
+    code = data.get("code", "").strip()
+    fqbn = data.get("fqbn", "arduino:avr:uno")
+
+    if not code:
+        return jsonify({"error": "Code vide"}), 400
+
+    # Whitelist FQBN
+    allowed = {"arduino:avr:uno", "arduino:avr:nano", "arduino:avr:mega"}
+    if fqbn not in allowed:
+        return jsonify({"error": f"FQBN non supporté: {fqbn}"}), 400
+
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sketch_dir = os.path.join(tmpdir, "sketch")
+            os.makedirs(sketch_dir)
+            with open(os.path.join(sketch_dir, "sketch.ino"), "w") as f:
+                f.write(code)
+
+            result = subprocess.run(
+                ["arduino-cli", "compile", "--fqbn", fqbn,
+                 "--output-dir", tmpdir, sketch_dir],
+                capture_output=True, text=True, timeout=120
+            )
+
+            if result.returncode != 0:
+                err = result.stderr or result.stdout or "Erreur inconnue"
+                # Nettoyer le chemin tmp du message d'erreur
+                err = err.replace(tmpdir, "sketch")
+                return jsonify({"error": err}), 400
+
+            hex_files = glob.glob(os.path.join(tmpdir, "*.hex"))
+            if not hex_files:
+                return jsonify({"error": "Aucun fichier .hex produit"}), 500
+
+            with open(hex_files[0], "r") as f:
+                hex_content = f.read()
+
+            return jsonify({"hex": hex_content, "fqbn": fqbn})
+
+    except subprocess.TimeoutExpired:
+        return jsonify({"error": "Compilation timeout (>120s)"}), 504
+    except FileNotFoundError:
+        return jsonify({"error": "Arduino CLI non disponible dans ce conteneur"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # ── Simulation API ─────────────────────────────────────────────────────────────
 @app.route("/api/simulate/start", methods=["POST"])
 def api_sim_start():

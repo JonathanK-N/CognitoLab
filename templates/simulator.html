@@ -45,17 +45,125 @@
 
     <!-- Simulator tab -->
     <div id="tab-sim" class="tab-panel" style="padding:0">
-      {% if selected_board in ['arduino-uno','arduino-nano','arduino-mega','esp32'] %}
+      {% if selected_board in ['arduino-uno','arduino-nano','arduino-mega'] %}
+      <!-- ── Simulateur AVR in-browser (avr8js + @wokwi/elements) ── -->
+      <div style="padding:20px">
+
+        <!-- Barre de statut -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(21,101,192,0.08);border:1px solid rgba(33,150,243,0.15);border-radius:10px;margin-bottom:16px;flex-wrap:wrap">
+          <span style="font-size:1.2rem">⚡</span>
+          <div style="flex:1">
+            <p style="font-weight:700;color:white;font-size:0.82rem">{{ board.label if board else selected_board }} — Simulation AVR locale</p>
+            <p style="color:#64748b;font-size:0.7rem">Compilation côté serveur · Exécution dans le navigateur via avr8js</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem">
+            <span id="avrDot" class="dot-offline"></span>
+            <span id="avrStatusText" style="color:#64748b">Prêt</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="btnCompile" class="btn-primary" style="font-size:0.75rem" onclick="compileAndRun()">▶ Compiler & Simuler</button>
+            <button id="btnStop" class="btn-ghost" style="font-size:0.75rem;display:none" onclick="stopAVR()">⏹ Arrêter</button>
+          </div>
+        </div>
+
+        <!-- Éditeur + Circuit -->
+        <div style="display:grid;grid-template-columns:1fr 260px;gap:16px;margin-bottom:16px">
+
+          <!-- Éditeur de code -->
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1">Sketch Arduino</p>
+              <span style="font-size:0.68rem;color:#475569">Ctrl+Entrée pour compiler</span>
+            </div>
+            <textarea id="arduinoCode" class="code-area" style="height:300px;width:100%;resize:none"
+              spellcheck="false"
+              onkeydown="if(event.ctrlKey&&event.key==='Enter'){compileAndRun()}"
+>void setup() {
+  Serial.begin(9600);
+  pinMode(LED_BUILTIN, OUTPUT);  // pin 13
+  pinMode(7, OUTPUT);
+  pinMode(8, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(7, HIGH);
+  Serial.println("ON");
+  delay(500);
+
+  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(7, LOW);
+  Serial.println("OFF");
+  delay(500);
+}</textarea>
+            <!-- Erreurs compilation -->
+            <div id="compileError" style="display:none;margin-top:8px;padding:10px 14px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#f87171;white-space:pre-wrap;max-height:120px;overflow:auto"></div>
+          </div>
+
+          <!-- Circuit virtuel -->
+          <div>
+            <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1;margin-bottom:10px">Circuit virtuel</p>
+
+            <!-- Arduino board simplified -->
+            <div style="background:rgba(5,8,16,0.8);border:1px solid rgba(33,150,243,0.12);border-radius:12px;padding:16px">
+
+              <!-- LEDs -->
+              <div style="margin-bottom:14px">
+                <p style="font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Sorties numériques</p>
+                {% for pin, color, label in [
+                  (13, 'yellow', 'LED_BUILTIN'),
+                  (7,  'red',    'D7'),
+                  (8,  'green',  'D8'),
+                  (9,  'blue',   'D9'),
+                ] %}
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                  <span style="font-size:0.68rem;color:#64748b;width:28px;text-align:right">{{ pin }}</span>
+                  <wokwi-led id="led{{ pin }}" color="{{ color }}" value="0"></wokwi-led>
+                  <span style="font-size:0.68rem;color:#64748b">{{ label }}</span>
+                </div>
+                {% endfor %}
+              </div>
+
+              <!-- Pin states -->
+              <div>
+                <p style="font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">États des pins</p>
+                <div id="pinStates" style="display:flex;flex-direction:column;gap:3px">
+                  {% for pin in [13, 7, 8, 9, 10, 11, 12] %}
+                  <div style="display:flex;justify-content:space-between;font-size:0.68rem">
+                    <span style="color:#475569">D{{ pin }}</span>
+                    <span id="pin{{ pin }}State" style="color:#475569">—</span>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Serial Monitor -->
+        <div style="border-radius:10px;overflow:hidden;border:1px solid rgba(33,150,243,0.12)">
+          <div style="padding:7px 14px;background:rgba(5,8,16,0.9);border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.72rem;color:#64748b">
+            <span>Serial Monitor</span>
+            <span style="margin-left:auto">9600 baud</span>
+            <button onclick="document.getElementById('serialOut').innerHTML=''" style="background:none;border:none;color:#475569;cursor:pointer;font-size:0.68rem">Effacer</button>
+          </div>
+          <div id="serialOut" style="height:100px;background:#050810;padding:10px 14px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#e2e8f0;line-height:1.7"></div>
+        </div>
+      </div>
+
+      {% elif selected_board == 'esp32' %}
+      <!-- ── ESP32 : Wokwi iframe ── -->
       <div style="background:#000;height:520px;position:relative">
         <iframe
-          src="https://wokwi.com/projects/new/{{ selected_board }}"
+          src="https://wokwi.com/projects/new/esp32"
           style="width:100%;height:100%;border:none"
-          title="Simulateur {{ selected_board }}"
+          title="Simulateur ESP32"
+          allow="serial"
           sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals">
         </iframe>
         <div style="position:absolute;bottom:0;left:0;right:0;padding:8px 12px;background:rgba(10,14,26,0.85);font-size:11px;color:#64748b">
-          Simulateur Wokwi intégré
-          <a href="https://wokwi.com/projects/new/{{ selected_board }}" target="_blank" style="color:#42A5F5;margin-left:8px">Ouvrir en plein écran ↗</a>
+          Simulateur Wokwi ESP32
+          <a href="https://wokwi.com/projects/new/esp32" target="_blank" style="color:#42A5F5;margin-left:8px">Ouvrir en plein écran ↗</a>
         </div>
       </div>
       {% else %}
@@ -142,7 +250,163 @@
   </div>
 </div>
 
+<!-- wokwi-elements : composants visuels (LED, boutons...) -->
+<script src="https://unpkg.com/@wokwi/elements/dist/wokwi-elements.bundle.js"></script>
+
 <script>
+// ── AVR Simulation (avr8js via ES module) ─────────────────────────────────────
+let avrRaf     = null;  // requestAnimationFrame handle
+let avrCpu     = null;
+const BOARD_FQBN = {
+  'arduino-uno':  'arduino:avr:uno',
+  'arduino-nano': 'arduino:avr:nano',
+  'arduino-mega': 'arduino:avr:mega',
+};
+
+function setAVRStatus(state) {
+  const dot  = document.getElementById('avrDot');
+  const txt  = document.getElementById('avrStatusText');
+  const bRun = document.getElementById('btnCompile');
+  const bStp = document.getElementById('btnStop');
+  if (!dot) return;
+  const map = {
+    ready:    { cls:'dot-offline', label:'Prêt',                color:'#64748b' },
+    building: { cls:'dot-warn',    label:'⏳ Compilation...',   color:'#fbbf24' },
+    running:  { cls:'dot-online',  label:'▶ Simulation active', color:'#4ade80' },
+    error:    { cls:'dot-warn',    label:'✗ Erreur',            color:'#f87171' },
+    stopped:  { cls:'dot-offline', label:'⏹ Arrêté',           color:'#64748b' },
+  };
+  const cfg = map[state] || map.ready;
+  dot.className      = cfg.cls;
+  txt.textContent    = cfg.label;
+  txt.style.color    = cfg.color;
+  if (bRun) bRun.style.display = state === 'running' ? 'none' : '';
+  if (bStp) bStp.style.display = state === 'running' ? ''     : 'none';
+}
+
+function serialPrint(text, color) {
+  const out = document.getElementById('serialOut');
+  if (!out) return;
+  const span = document.createElement('span');
+  span.style.color = color || '#e2e8f0';
+  span.textContent = text;
+  out.appendChild(span);
+  out.scrollTop = out.scrollHeight;
+}
+
+function setPinLED(pin, high) {
+  const led = document.getElementById('led' + pin);
+  if (led) led.value = high;
+  const state = document.getElementById('pin' + pin + 'State');
+  if (state) {
+    state.textContent = high ? 'HIGH' : 'LOW';
+    state.style.color = high ? '#4ade80' : '#475569';
+  }
+}
+
+function stopAVR() {
+  if (avrRaf) { cancelAnimationFrame(avrRaf); avrRaf = null; }
+  avrCpu = null;
+  [7,8,9,10,11,12,13].forEach(p => setPinLED(p, false));
+  setAVRStatus('stopped');
+}
+
+async function compileAndRun() {
+  stopAVR();
+  const code     = document.getElementById('arduinoCode')?.value;
+  const errBox   = document.getElementById('compileError');
+  const serialOut = document.getElementById('serialOut');
+  const board    = '{{ selected_board }}';
+  const fqbn     = BOARD_FQBN[board] || 'arduino:avr:uno';
+
+  if (errBox)    { errBox.style.display = 'none'; errBox.textContent = ''; }
+  if (serialOut) { serialOut.innerHTML = ''; }
+
+  setAVRStatus('building');
+  serialPrint('[CognitoLab] Compilation en cours...\n', '#42A5F5');
+
+  try {
+    const res  = await fetch('/api/compile/arduino', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({code, fqbn}),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      setAVRStatus('error');
+      if (errBox) { errBox.style.display = 'block'; errBox.textContent = data.error; }
+      serialPrint('[Erreur de compilation]\n', '#f87171');
+      return;
+    }
+
+    serialPrint('[CognitoLab] Compilation OK — démarrage de la simulation...\n', '#4ade80');
+    runHex(data.hex);
+
+  } catch(e) {
+    setAVRStatus('error');
+    serialPrint('[Erreur réseau] ' + e.message + '\n', '#f87171');
+  }
+}
+
+async function runHex(hexText) {
+  // Import avr8js dynamiquement
+  const avr8 = await import('https://esm.sh/avr8js@0.14.3');
+  const { CPU, avrInstruction, AVRIOPort, AVRUSART,
+          portBConfig, portDConfig, usart0Config, loadHex } = avr8;
+
+  // ATmega328P : 32KB flash
+  const progMem = new Uint16Array(0x8000);
+  loadHex(hexText, progMem);
+  const cpu = new CPU(progMem);
+  avrCpu = cpu;
+
+  // ── Port B (D8–D13) ──
+  // Arduino pin 13 = PB5, 12 = PB4, 11 = PB3, 10 = PB2, 9 = PB1, 8 = PB0
+  const portB = new AVRIOPort(cpu, portBConfig);
+  portB.addListener(() => {
+    setPinLED(13, portB.pinState(5) === 1);
+    setPinLED(12, portB.pinState(4) === 1);
+    setPinLED(11, portB.pinState(3) === 1);
+    setPinLED(10, portB.pinState(2) === 1);
+    setPinLED(9,  portB.pinState(1) === 1);
+    setPinLED(8,  portB.pinState(0) === 1);
+  });
+
+  // ── Port D (D0–D7) ──
+  // Arduino pin 7 = PD7, 6 = PD6, 5 = PD5, 4 = PD4, 3 = PD3, 2 = PD2
+  const portD = new AVRIOPort(cpu, portDConfig);
+  portD.addListener(() => {
+    setPinLED(7, portD.pinState(7) === 1);
+  });
+
+  // ── UART Serial ──
+  const usart = new AVRUSART(cpu, usart0Config, 16_000_000);
+  let lineBuffer = '';
+  usart.onByteTransmit = (byte) => {
+    const ch = String.fromCharCode(byte);
+    if (ch === '\n') {
+      serialPrint(lineBuffer + '\n', '#e2e8f0');
+      lineBuffer = '';
+    } else {
+      lineBuffer += ch;
+    }
+  };
+
+  setAVRStatus('running');
+
+  // ── Boucle de simulation : ~16M cycles/s (vitesse réelle Arduino 16MHz) ──
+  const CYCLES_PER_FRAME = Math.round(16_000_000 / 60);
+  function frame() {
+    for (let i = 0; i < CYCLES_PER_FRAME; i++) {
+      avrInstruction(cpu);
+      cpu.tick();
+    }
+    usart.tick();
+    avrRaf = requestAnimationFrame(frame);
+  }
+  avrRaf = requestAnimationFrame(frame);
+}
+
 // ── Simulation Renode ──────────────────────────────────────────────────────────
 let currentSessionId  = null;
 let currentEventSource = null;
