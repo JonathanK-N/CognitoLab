@@ -114,9 +114,18 @@ def seed_data():
 
     db.session.commit()
 
-with app.app_context():
-    db.create_all()
-    seed_data()
+_db_ready = False
+
+@app.before_request
+def init_db():
+    global _db_ready
+    if not _db_ready:
+        try:
+            db.create_all()
+            seed_data()
+            _db_ready = True
+        except Exception as e:
+            app.logger.error(f"DB init error: {e}")
 
 # ── Static data ────────────────────────────────────────────────────────────────
 COURSES = [
