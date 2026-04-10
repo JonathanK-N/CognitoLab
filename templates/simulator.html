@@ -100,54 +100,74 @@ void loop() {
             <div id="compileError" style="display:none;margin-top:8px;padding:10px 14px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#f87171;white-space:pre-wrap;max-height:120px;overflow:auto"></div>
           </div>
 
-          <!-- Circuit virtuel -->
+          <!-- Visualisation circuit -->
           <div>
-            <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1;margin-bottom:10px">Circuit virtuel</p>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1">Visualisation</p>
+              <!-- Sélecteur de composant additionnel -->
+              <select id="extraComponent" class="cl-input" style="font-size:0.68rem;padding:4px 8px;width:auto" onchange="updateExtraComponent()">
+                <option value="led">+ LED rouge (D7)</option>
+                <option value="lcd">LCD 16×2 (Serial)</option>
+                <option value="servo">Servo (D9 PWM)</option>
+                <option value="button">Bouton (D2)</option>
+                <option value="seg7">7 segments (D4-D10)</option>
+              </select>
+            </div>
 
-            <!-- Arduino board simplified -->
-            <div style="background:rgba(5,8,16,0.8);border:1px solid rgba(33,150,243,0.12);border-radius:12px;padding:16px">
+            <!-- Zone de visualisation -->
+            <div style="background:rgba(5,8,16,0.85);border:1px solid rgba(33,150,243,0.12);border-radius:12px;padding:12px;overflow:auto">
 
-              <!-- LEDs -->
-              <div style="margin-bottom:14px">
-                <p style="font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Sorties numériques</p>
-                {% for pin, color, label in [
-                  (13, 'yellow', 'LED_BUILTIN'),
-                  (7,  'red',    'D7'),
-                  (8,  'green',  'D8'),
-                  (9,  'blue',   'D9'),
-                ] %}
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                  <span style="font-size:0.68rem;color:#64748b;width:28px;text-align:right">{{ pin }}</span>
-                  <wokwi-led id="led{{ pin }}" color="{{ color }}" value="0"></wokwi-led>
-                  <span style="font-size:0.68rem;color:#64748b">{{ label }}</span>
-                </div>
-                {% endfor %}
+              <!-- Arduino Uno board visuel -->
+              <div style="display:flex;justify-content:center;margin-bottom:12px">
+                <wokwi-arduino-uno id="arduinoBoard"></wokwi-arduino-uno>
               </div>
 
-              <!-- Pin states -->
-              <div>
-                <p style="font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">États des pins</p>
-                <div id="pinStates" style="display:flex;flex-direction:column;gap:3px">
-                  {% for pin in [13, 7, 8, 9, 10, 11, 12] %}
-                  <div style="display:flex;justify-content:space-between;font-size:0.68rem">
-                    <span style="color:#475569">D{{ pin }}</span>
-                    <span id="pin{{ pin }}State" style="color:#475569">—</span>
-                  </div>
-                  {% endfor %}
+              <!-- LEDs sur breadboard -->
+              <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:10px" id="ledRow">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <wokwi-led id="led13" color="yellow" value="0"></wokwi-led>
+                  <span style="font-size:0.6rem;color:#475569">13</span>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <wokwi-led id="led7" color="red" value="0"></wokwi-led>
+                  <span style="font-size:0.6rem;color:#475569">D7</span>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <wokwi-led id="led8" color="green" value="0"></wokwi-led>
+                  <span style="font-size:0.6rem;color:#475569">D8</span>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <wokwi-led id="led9" color="blue" value="0"></wokwi-led>
+                  <span style="font-size:0.6rem;color:#475569">D9</span>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <wokwi-led id="led10" color="white" value="0"></wokwi-led>
+                  <span style="font-size:0.6rem;color:#475569">D10</span>
                 </div>
               </div>
+
+              <!-- Composant additionnel dynamique -->
+              <div id="extraComponentArea" style="display:flex;justify-content:center"></div>
             </div>
           </div>
         </div>
 
-        <!-- Serial Monitor -->
-        <div style="border-radius:10px;overflow:hidden;border:1px solid rgba(33,150,243,0.12)">
-          <div style="padding:7px 14px;background:rgba(5,8,16,0.9);border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.72rem;color:#64748b">
-            <span>Serial Monitor</span>
-            <span style="margin-left:auto">9600 baud</span>
-            <button onclick="document.getElementById('serialOut').innerHTML=''" style="background:none;border:none;color:#475569;cursor:pointer;font-size:0.68rem">Effacer</button>
+        <!-- Serial Monitor + bouton additionnel -->
+        <div style="display:grid;grid-template-columns:1fr auto;gap:12px">
+          <div style="border-radius:10px;overflow:hidden;border:1px solid rgba(33,150,243,0.12)">
+            <div style="padding:7px 14px;background:rgba(5,8,16,0.9);border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.72rem;color:#64748b">
+              <span>Serial Monitor</span>
+              <span style="margin-left:auto">9600 baud</span>
+              <button onclick="document.getElementById('serialOut').innerHTML=''" style="background:none;border:none;color:#475569;cursor:pointer;font-size:0.68rem">Effacer</button>
+            </div>
+            <div id="serialOut" style="height:110px;background:#050810;padding:10px 14px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#e2e8f0;line-height:1.7"></div>
           </div>
-          <div id="serialOut" style="height:100px;background:#050810;padding:10px 14px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#e2e8f0;line-height:1.7"></div>
+
+          <!-- Bouton interactif D2 -->
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:rgba(5,8,16,0.6);border:1px solid rgba(33,150,243,0.1);border-radius:10px;padding:14px">
+            <wokwi-pushbutton id="btnD2" color="green"></wokwi-pushbutton>
+            <span style="font-size:0.65rem;color:#64748b">D2</span>
+          </div>
         </div>
       </div>
 
@@ -294,15 +314,69 @@ function serialPrint(text, color) {
   out.scrollTop = out.scrollHeight;
 }
 
-function setPinLED(pin, high) {
-  const led = document.getElementById('led' + pin);
-  if (led) led.value = high;
-  const state = document.getElementById('pin' + pin + 'State');
-  if (state) {
-    state.textContent = high ? 'HIGH' : 'LOW';
-    state.style.color = high ? '#4ade80' : '#475569';
+// ── Composant additionnel ─────────────────────────────────────────────────────
+let lcdComponent = null;
+
+function updateExtraComponent() {
+  const val  = document.getElementById('extraComponent')?.value;
+  const area = document.getElementById('extraComponentArea');
+  if (!area) return;
+  area.innerHTML = '';
+  lcdComponent = null;
+
+  if (val === 'lcd') {
+    const lcd = document.createElement('wokwi-lcd1602');
+    lcd.id = 'lcdDisplay';
+    lcd.setAttribute('background', '#1a237e');
+    area.appendChild(lcd);
+    lcdComponent = lcd;
+  } else if (val === 'servo') {
+    const s = document.createElement('wokwi-servo');
+    s.id = 'servoVis';
+    area.appendChild(s);
+  } else if (val === 'seg7') {
+    const s = document.createElement('wokwi-7segment');
+    s.id = 'seg7Vis';
+    s.setAttribute('color', '#ff0000');
+    area.appendChild(s);
   }
 }
+
+function setPinLED(pin, high) {
+  const led = document.getElementById('led' + pin);
+  if (led) led.value = high ? 1 : 0;
+
+  // Si servo sur D9 (PWM) — approximation visuelle
+  if (pin === 9) {
+    const servo = document.getElementById('servoVis');
+    if (servo) servo.angle = high ? 90 : 0;
+  }
+}
+
+// Envoyer texte vers LCD
+function lcdPrint(line1, line2) {
+  const lcd = document.getElementById('lcdDisplay');
+  if (!lcd) return;
+  lcd.setAttribute('line1', (line1 || '').substring(0, 16).padEnd(16));
+  lcd.setAttribute('line2', (line2 || '').substring(0, 16).padEnd(16));
+}
+
+// Intercepter Serial pour alimenter le LCD aussi
+let lcdLines = ['', ''];
+function onSerialByte(byte) {
+  const ch = String.fromCharCode(byte);
+  serialBuf += ch;
+  if (ch === '\n') {
+    const line = serialBuf.replace('\n','').replace('\r','');
+    serialPrint(line + '\n', '#e2e8f0');
+    // Scroll LCD : line2 devient line1, nouvelle ligne en line2
+    lcdLines[0] = lcdLines[1];
+    lcdLines[1] = line;
+    lcdPrint(lcdLines[0], lcdLines[1]);
+    serialBuf = '';
+  }
+}
+let serialBuf = '';
 
 function stopAVR() {
   if (avrRaf) { cancelAnimationFrame(avrRaf); avrRaf = null; }
@@ -381,16 +455,17 @@ async function runHex(hexText) {
 
   // ── UART Serial ──
   const usart = new AVRUSART(cpu, usart0Config, 16_000_000);
-  let lineBuffer = '';
-  usart.onByteTransmit = (byte) => {
-    const ch = String.fromCharCode(byte);
-    if (ch === '\n') {
-      serialPrint(lineBuffer + '\n', '#e2e8f0');
-      lineBuffer = '';
-    } else {
-      lineBuffer += ch;
-    }
-  };
+  serialBuf = '';
+  lcdLines  = ['', ''];
+  usart.onByteTransmit = (byte) => onSerialByte(byte);
+
+  // ── Bouton D2 (Port D, bit 2) — entrée interactive ──
+  const btnEl = document.getElementById('btnD2');
+  if (btnEl) {
+    portD.setPin(2, true);  // pull-up : repos = HIGH
+    btnEl.addEventListener('button-press',   () => portD.setPin(2, false));
+    btnEl.addEventListener('button-release', () => portD.setPin(2, true));
+  }
 
   setAVRStatus('running');
 
