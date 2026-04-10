@@ -171,12 +171,20 @@ BOARDS = [
 ]
 
 # ── Page routes ────────────────────────────────────────────────────────────────
+def safe_db(fn, default):
+    """Execute a DB query, return default on any error."""
+    try:
+        return fn()
+    except Exception as e:
+        app.logger.warning(f"DB query skipped: {e}")
+        return default
+
 @app.route("/")
 def dashboard():
-    projects_count = Project.query.count()
-    posts_count    = CommunityPost.query.count()
-    progresses     = {p.course_id: p.progress for p in CourseProgress.query.all()}
-    recent_projects = Project.query.order_by(Project.created_at.desc()).limit(3).all()
+    projects_count  = safe_db(lambda: Project.query.count(), 0)
+    posts_count     = safe_db(lambda: CommunityPost.query.count(), 0)
+    progresses      = safe_db(lambda: {p.course_id: p.progress for p in CourseProgress.query.all()}, {})
+    recent_projects = safe_db(lambda: Project.query.order_by(Project.created_at.desc()).limit(3).all(), [])
     return render_template("dashboard.html",
         projects_count=projects_count,
         posts_count=posts_count,
@@ -191,7 +199,7 @@ def simulator():
 
 @app.route("/courses")
 def courses():
-    progresses = {p.course_id: p.progress for p in CourseProgress.query.all()}
+    progresses = safe_db(lambda: {p.course_id: p.progress for p in CourseProgress.query.all()}, {})
     return render_template("courses.html", courses=COURSES, progresses=progresses)
 
 @app.route("/components")
@@ -207,22 +215,24 @@ def components():
 
 @app.route("/projects")
 def projects():
-    all_projects = Project.query.order_by(Project.created_at.desc()).all()
+    all_projects = safe_db(lambda: Project.query.order_by(Project.created_at.desc()).all(), [])
     return render_template("projects.html", projects=all_projects, boards=BOARDS)
 
 @app.route("/community")
 def community():
     board_filter = request.args.get("board", "Tous")
     search = request.args.get("q", "")
-    query = CommunityPost.query
-    if board_filter != "Tous":
-        query = query.filter(CommunityPost.board == board_filter)
-    if search:
-        query = query.filter(
-            CommunityPost.title.ilike(f"%{search}%") |
-            CommunityPost.description.ilike(f"%{search}%")
-        )
-    posts = query.order_by(CommunityPost.created_at.desc()).all()
+    def get_posts():
+        q = CommunityPost.query
+        if board_filter != "Tous":
+            q = q.filter(CommunityPost.board == board_filter)
+        if search:
+            q = q.filter(
+                CommunityPost.title.ilike(f"%{search}%") |
+                CommunityPost.description.ilike(f"%{search}%")
+            )
+        return q.order_by(CommunityPost.created_at.desc()).all()
+    posts = safe_db(get_posts, [])
     boards = ["Tous", "Arduino", "ESP32", "Raspberry Pi", "STM32", "RP2040"]
     return render_template("community.html",
         posts=posts, boards=boards, board_filter=board_filter, search=search)
@@ -277,72 +287,102 @@ def ai_assist():
 
 @app.route("/api/projects", methods=["GET"])
 def api_projects():
-    return jsonify([p.to_dict() for p in Project.query.order_by(Project.created_at.desc()).all()])
+    try:
+        return jsonify([p.to_dict() for p in Project.query.order_by(Project.created_at.desc()).all()])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 503
 
 @app.route("/api/projects", methods=["POST"])
 def api_create_project():
-    data = request.get_json() or {}
-    p = Project(
-        title=data.get("title", "Nouveau projet"),
-        board=data.get("board", "arduino-uno"),
-        code=data.get("code", ""),
-        status="draft",
-    )
-    db.session.add(p)
-    db.session.commit()
-    return jsonify(p.to_dict()), 201
+    try:
+        data = request.get_json() or {}
+        p = Project(
+            title=data.get("title", "Nouveau projet"),
+            board=data.get("board", "arduino-uno"),
+            code=data.get("code", ""),
+            status="draft",
+        )
+        db.session.add(p)
+        db.session.commit()
+        return jsonify(p.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 503
 
 @app.route("/api/projects/<int:pid>", methods=["PUT"])
 def api_update_project(pid):
-    p = Project.query.get_or_404(pid)
-    data = request.get_json() or {}
-    p.title  = data.get("title", p.title)
-    p.board  = data.get("board", p.board)
-    p.code   = data.get("code", p.code)
-    p.status = data.get("status", p.status)
-    db.session.commit()
-    return jsonify(p.to_dict())
+    try:
+        p = Project.query.get_or_404(pid)
+        data = request.get_json() or {}
+        p.title  = data.get("title", p.title)
+        p.board  = data.get("board", p.board)
+        p.code   = data.get("code", p.code)
+        p.status = data.get("status", p.status)
+        db.session.commit()
+        return jsonify(p.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 503
 
 @app.route("/api/projects/<int:pid>", methods=["DELETE"])
 def api_delete_project(pid):
-    p = Project.query.get_or_404(pid)
-    db.session.delete(p)
-    db.session.commit()
-    return jsonify({"ok": True})
+    try:
+        p = Project.query.get_or_404(pid)
+        db.session.delete(p)
+        db.session.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 503
 
 @app.route("/api/community/posts", methods=["POST"])
 def api_create_post():
-    data = request.get_json() or {}
-    initials = "".join(w[0].upper() for w in data.get("author", "Anonyme").split()[:2])
-    post = CommunityPost(
-        author=data.get("author", "Anonyme"),
-        avatar=initials or "AN",
-        title=data.get("title", ""),
-        description=data.get("description", ""),
-        board=data.get("board", "Arduino"),
-        tags=",".join(data.get("tags", [])),
-    )
-    db.session.add(post)
-    db.session.commit()
-    return jsonify(post.to_dict()), 201
+    try:
+        data = request.get_json() or {}
+        author = data.get("author", "Anonyme")
+        initials = "".join(w[0].upper() for w in author.split()[:2]) or "AN"
+        # accept both 'content' and 'description' from frontend
+        description = data.get("content") or data.get("description", "")
+        post = CommunityPost(
+            author=author,
+            avatar=initials,
+            title=data.get("title", ""),
+            description=description,
+            board=data.get("board", "Arduino"),
+            tags=",".join(data.get("tags", [])),
+        )
+        db.session.add(post)
+        db.session.commit()
+        return jsonify(post.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 503
 
 @app.route("/api/community/posts/<int:pid>/like", methods=["POST"])
 def api_like_post(pid):
-    post = CommunityPost.query.get_or_404(pid)
-    post.likes += 1
-    db.session.commit()
-    return jsonify({"likes": post.likes})
+    try:
+        post = CommunityPost.query.get_or_404(pid)
+        post.likes += 1
+        db.session.commit()
+        return jsonify({"likes": post.likes})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 503
 
 @app.route("/api/courses/<course_id>/progress", methods=["POST"])
 def api_update_progress(course_id):
-    data = request.get_json() or {}
-    prog = CourseProgress.query.filter_by(course_id=course_id).first()
-    if not prog:
-        prog = CourseProgress(course_id=course_id, progress=0)
-        db.session.add(prog)
-    prog.progress = min(100, max(0, data.get("progress", prog.progress)))
-    db.session.commit()
-    return jsonify({"course_id": course_id, "progress": prog.progress})
+    try:
+        data = request.get_json() or {}
+        prog = CourseProgress.query.filter_by(course_id=course_id).first()
+        if not prog:
+            prog = CourseProgress(course_id=course_id, progress=0)
+            db.session.add(prog)
+        prog.progress = min(100, max(0, data.get("progress", prog.progress)))
+        db.session.commit()
+        return jsonify({"course_id": course_id, "progress": prog.progress})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 503
 
 # ── Run ────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
