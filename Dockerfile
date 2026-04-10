@@ -57,5 +57,6 @@ COPY static/ ./static/
 
 EXPOSE 5000
 
-# gevent worker : connexions SSE longues sans bloquer Flask
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 4 --worker-class gevent --worker-connections 100 --timeout 300 app:app"]
+# 1 worker gevent = 1 seul processus partagé (sim_manager en mémoire)
+# gevent gère la concurrence via greenlets — pas besoin de plusieurs workers
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 1 --worker-class gevent --worker-connections 200 --timeout 300 app:app"]
