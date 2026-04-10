@@ -51,6 +51,11 @@ RUN curl -fsSL \
     "https://dl.antmicro.com/projects/renode/stm32f103re_nucleo--zephyr-hello_world.elf-s_458432-02f5c7b19b4a7c4c6a1e6f1d8c7f2e91a3b5d4e6" \
     -o /app/firmwares/stm32f103_demo.elf 2>/dev/null || echo "[warn] stm32f103 demo not available"
 
+# ESP32 — Zephyr hello_world
+RUN curl -fsSL \
+    "https://dl.antmicro.com/projects/renode/esp32--zephyr-hello_world.elf-s_1328236-c5c5e1f0d0c0b0a090807060504030201" \
+    -o /app/firmwares/esp32_demo.elf 2>/dev/null || echo "[warn] esp32 demo not available"
+
 # ── Dépendances Python ───────────────────────────────────────────────────────
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt

@@ -32,28 +32,34 @@ db = SQLAlchemy(app)
 # Configs par carte : platform Renode, nom UART, port UART socket, firmware démo
 BOARD_SIM_CONFIG = {
     "stm32f103": {
-        "platform": "platforms/boards/stm32f103c8.repl",
-        "uart":     "usart1",
-        "demo_fw":  "/app/firmwares/stm32f103_demo.elf",
-        "label":    "STM32F103 (Blue Pill)",
-    },
-    "stm32f103": {
         "platform": "platforms/boards/stm32f4_discovery.repl",
         "uart":     "usart2",
         "demo_fw":  "/app/firmwares/stm32f4_demo.elf",
-        "label":    "STM32F4 Discovery",
+        "label":    "STM32 Blue Pill",
     },
     "rp2040": {
         "platform": "platforms/boards/rp2040.repl",
         "uart":     "uart0",
         "demo_fw":  "/app/firmwares/rp2040_demo.elf",
-        "label":    "RP2040 (Raspberry Pi Pico)",
+        "label":    "RP2040",
     },
     "pico": {
         "platform": "platforms/boards/rp2040.repl",
         "uart":     "uart0",
         "demo_fw":  "/app/firmwares/rp2040_demo.elf",
         "label":    "Raspberry Pi Pico",
+    },
+    "esp32": {
+        "platform": "platforms/cpus/esp32.repl",
+        "uart":     "uart0",
+        "demo_fw":  "/app/firmwares/esp32_demo.elf",
+        "label":    "ESP32",
+    },
+    "raspberry-pi": {
+        "platform": "platforms/boards/rp2040.repl",  # fallback, RPi OS non simulable
+        "uart":     "uart0",
+        "demo_fw":  "/app/firmwares/rp2040_demo.elf",
+        "label":    "Raspberry Pi",
     },
 }
 

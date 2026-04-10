@@ -20,7 +20,7 @@
     {% endfor %}
   </div>
 
-  <!-- Selected board info -->
+  <!-- Board info bar -->
   {% set board = boards | selectattr('id', 'equalto', selected_board) | first %}
   {% if board %}
   <div class="board-info-bar">
@@ -30,221 +30,243 @@
       <p class="text-sm text-muted">{{ board.desc }}</p>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px">
-      <span class="badge badge-blue">Simulation</span>
-      <span class="badge badge-cyan">Wokwi</span>
+      <span class="badge badge-blue">
+        {% if selected_board in ['arduino-uno','arduino-nano','arduino-mega'] %}avr8js{% else %}Renode{% endif %}
+      </span>
+      <span class="badge badge-cyan">In-browser</span>
     </div>
   </div>
   {% endif %}
 
-  <!-- Simulator tabs -->
+  <!-- Tabs -->
   <div class="glass-card" style="overflow:hidden">
     <div class="tab-bar">
       <button class="tab-btn active" onclick="switchTab('sim',this)">🔌 Simulateur</button>
-      <button class="tab-btn"       onclick="switchTab('ai',this)">🧠 Cognito IA</button>
+      <button class="tab-btn"        onclick="switchTab('ai',this)">🧠 Cognito IA</button>
     </div>
 
-    <!-- Simulator tab -->
+    <!-- ── Simulator tab ── -->
     <div id="tab-sim" class="tab-panel" style="padding:0">
+
       {% if selected_board in ['arduino-uno','arduino-nano','arduino-mega'] %}
-      <!-- ── Simulateur AVR in-browser (avr8js + @wokwi/elements) ── -->
+      <!-- ═══════════════════════════════════════════════
+           AVR IN-BROWSER (avr8js + wokwi-elements)
+      ════════════════════════════════════════════════ -->
       <div style="padding:20px">
 
-        <!-- Barre de statut -->
+        <!-- Status bar -->
         <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(21,101,192,0.08);border:1px solid rgba(33,150,243,0.15);border-radius:10px;margin-bottom:16px;flex-wrap:wrap">
           <span style="font-size:1.2rem">⚡</span>
           <div style="flex:1">
-            <p style="font-weight:700;color:white;font-size:0.82rem">{{ board.label if board else selected_board }} — Simulation AVR locale</p>
-            <p style="color:#64748b;font-size:0.7rem">Compilation côté serveur · Exécution dans le navigateur via avr8js</p>
+            <p style="font-weight:700;color:white;font-size:0.82rem">{{ board.label if board else selected_board }} — Simulation in-browser</p>
+            <p style="color:#64748b;font-size:0.7rem">Compilation serveur · Exécution AVR dans le navigateur à 16MHz</p>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem">
-            <span id="avrDot" class="dot-offline"></span>
-            <span id="avrStatusText" style="color:#64748b">Prêt</span>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button id="btnCompile" class="btn-primary" style="font-size:0.75rem" onclick="compileAndRun()">▶ Compiler & Simuler</button>
-            <button id="btnStop" class="btn-ghost" style="font-size:0.75rem;display:none" onclick="stopAVR()">⏹ Arrêter</button>
-          </div>
+          <span id="avrDot" class="dot-offline"></span>
+          <span id="avrStatusText" style="font-size:0.72rem;color:#64748b">Prêt</span>
+          <button id="btnCompile" class="btn-primary" style="font-size:0.75rem" onclick="compileAndRun()">▶ Compiler & Simuler</button>
+          <button id="btnStopAvr" class="btn-ghost" style="font-size:0.75rem;display:none" onclick="stopAVR()">⏹ Arrêter</button>
         </div>
 
-        <!-- Éditeur + Circuit -->
-        <div style="display:grid;grid-template-columns:1fr 260px;gap:16px;margin-bottom:16px">
+        <!-- Editor + Visual -->
+        <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:14px">
 
-          <!-- Éditeur de code -->
+          <!-- Code editor -->
           <div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-              <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1">Sketch Arduino</p>
-              <span style="font-size:0.68rem;color:#475569">Ctrl+Entrée pour compiler</span>
-            </div>
-            <textarea id="arduinoCode" class="code-area" style="height:300px;width:100%;resize:none"
-              spellcheck="false"
+            <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1;margin-bottom:6px">Sketch Arduino <span style="color:#475569;font-weight:400">(Ctrl+Entrée pour compiler)</span></p>
+            <textarea id="arduinoCode" class="code-area" style="height:300px;width:100%;resize:none" spellcheck="false"
               onkeydown="if(event.ctrlKey&&event.key==='Enter'){compileAndRun()}"
 >void setup() {
   Serial.begin(9600);
-  pinMode(LED_BUILTIN, OUTPUT);  // pin 13
+  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(7, OUTPUT);
   pinMode(8, OUTPUT);
+  pinMode(9, OUTPUT);
 }
 
 void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  digitalWrite(7, HIGH);
-  Serial.println("ON");
-  delay(500);
-
-  digitalWrite(LED_BUILTIN, LOW);
-  digitalWrite(7, LOW);
-  Serial.println("OFF");
-  delay(500);
+  for(int i = 0; i < 3; i++) {
+    int pins[] = {LED_BUILTIN, 7, 8, 9};
+    for(int p = 0; p < 4; p++) {
+      digitalWrite(pins[p], HIGH);
+      Serial.print("LED ");
+      Serial.print(p);
+      Serial.println(" ON");
+      delay(200);
+      digitalWrite(pins[p], LOW);
+    }
+  }
 }</textarea>
-            <!-- Erreurs compilation -->
-            <div id="compileError" style="display:none;margin-top:8px;padding:10px 14px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#f87171;white-space:pre-wrap;max-height:120px;overflow:auto"></div>
+            <div id="compileError" style="display:none;margin-top:8px;padding:10px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#f87171;white-space:pre-wrap;max-height:120px;overflow:auto"></div>
           </div>
 
-          <!-- Visualisation circuit -->
+          <!-- Visual circuit -->
           <div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-              <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1">Visualisation</p>
-              <!-- Sélecteur de composant additionnel -->
-              <select id="extraComponent" class="cl-input" style="font-size:0.68rem;padding:4px 8px;width:auto" onchange="updateExtraComponent()">
-                <option value="led">+ LED rouge (D7)</option>
-                <option value="lcd">LCD 16×2 (Serial)</option>
-                <option value="servo">Servo (D9 PWM)</option>
-                <option value="button">Bouton (D2)</option>
-                <option value="seg7">7 segments (D4-D10)</option>
+              <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1">Circuit</p>
+              <select id="extraComponent" class="cl-input" style="font-size:0.68rem;padding:3px 8px;width:auto" onchange="updateExtraComponent()">
+                <option value="none">Composants...</option>
+                <option value="lcd">LCD 16×2</option>
+                <option value="servo">Servo (D9)</option>
+                <option value="neopixel">NeoPixel (D6)</option>
               </select>
             </div>
 
-            <!-- Zone de visualisation -->
-            <div style="background:rgba(5,8,16,0.85);border:1px solid rgba(33,150,243,0.12);border-radius:12px;padding:12px;overflow:auto">
+            <div style="background:rgba(5,8,16,0.85);border:1px solid rgba(33,150,243,0.12);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:10px">
 
-              <!-- Arduino Uno board visuel -->
-              <div style="display:flex;justify-content:center;margin-bottom:12px">
-                <wokwi-arduino-uno id="arduinoBoard"></wokwi-arduino-uno>
-              </div>
+              <!-- Correct board element per model -->
+              {% if selected_board == 'arduino-uno' %}
+              <wokwi-arduino-uno id="avrBoard"></wokwi-arduino-uno>
+              {% elif selected_board == 'arduino-nano' %}
+              <wokwi-arduino-nano id="avrBoard"></wokwi-arduino-nano>
+              {% elif selected_board == 'arduino-mega' %}
+              <wokwi-arduino-mega id="avrBoard"></wokwi-arduino-mega>
+              {% endif %}
 
-              <!-- LEDs sur breadboard -->
-              <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:10px" id="ledRow">
-                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <!-- LEDs -->
+              <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
                   <wokwi-led id="led13" color="yellow" value="0"></wokwi-led>
                   <span style="font-size:0.6rem;color:#475569">13</span>
                 </div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
                   <wokwi-led id="led7" color="red" value="0"></wokwi-led>
                   <span style="font-size:0.6rem;color:#475569">D7</span>
                 </div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
                   <wokwi-led id="led8" color="green" value="0"></wokwi-led>
                   <span style="font-size:0.6rem;color:#475569">D8</span>
                 </div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
                   <wokwi-led id="led9" color="blue" value="0"></wokwi-led>
                   <span style="font-size:0.6rem;color:#475569">D9</span>
                 </div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
                   <wokwi-led id="led10" color="white" value="0"></wokwi-led>
                   <span style="font-size:0.6rem;color:#475569">D10</span>
                 </div>
               </div>
 
-              <!-- Composant additionnel dynamique -->
-              <div id="extraComponentArea" style="display:flex;justify-content:center"></div>
+              <!-- Extra component slot -->
+              <div id="extraSlot" style="display:flex;justify-content:center"></div>
+
+              <!-- Push button -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+                <wokwi-pushbutton id="btnD2" color="green"></wokwi-pushbutton>
+                <span style="font-size:0.6rem;color:#475569">D2</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Serial Monitor + bouton additionnel -->
-        <div style="display:grid;grid-template-columns:1fr auto;gap:12px">
-          <div style="border-radius:10px;overflow:hidden;border:1px solid rgba(33,150,243,0.12)">
-            <div style="padding:7px 14px;background:rgba(5,8,16,0.9);border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.72rem;color:#64748b">
-              <span>Serial Monitor</span>
-              <span style="margin-left:auto">9600 baud</span>
-              <button onclick="document.getElementById('serialOut').innerHTML=''" style="background:none;border:none;color:#475569;cursor:pointer;font-size:0.68rem">Effacer</button>
-            </div>
-            <div id="serialOut" style="height:110px;background:#050810;padding:10px 14px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#e2e8f0;line-height:1.7"></div>
+        <!-- Serial monitor -->
+        <div style="border-radius:10px;overflow:hidden;border:1px solid rgba(33,150,243,0.12)">
+          <div style="padding:7px 14px;background:rgba(5,8,16,0.9);border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.72rem;color:#64748b">
+            <span>Serial Monitor</span>
+            <span style="margin-left:auto">9600 baud</span>
+            <button onclick="document.getElementById('serialOut').innerHTML=''" style="background:none;border:none;color:#475569;cursor:pointer;font-size:0.68rem">Effacer</button>
           </div>
-
-          <!-- Bouton interactif D2 -->
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:rgba(5,8,16,0.6);border:1px solid rgba(33,150,243,0.1);border-radius:10px;padding:14px">
-            <wokwi-pushbutton id="btnD2" color="green"></wokwi-pushbutton>
-            <span style="font-size:0.65rem;color:#64748b">D2</span>
-          </div>
+          <div id="serialOut" style="height:110px;background:#050810;padding:10px 14px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#e2e8f0;line-height:1.7"></div>
         </div>
       </div>
 
-      {% elif selected_board == 'esp32' %}
-      <!-- ── ESP32 : Wokwi iframe ── -->
-      <div style="background:#000;height:520px;position:relative">
-        <iframe
-          src="https://wokwi.com/projects/new/esp32"
-          style="width:100%;height:100%;border:none"
-          title="Simulateur ESP32"
-          allow="serial"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals">
-        </iframe>
-        <div style="position:absolute;bottom:0;left:0;right:0;padding:8px 12px;background:rgba(10,14,26,0.85);font-size:11px;color:#64748b">
-          Simulateur Wokwi ESP32
-          <a href="https://wokwi.com/projects/new/esp32" target="_blank" style="color:#42A5F5;margin-left:8px">Ouvrir en plein écran ↗</a>
-        </div>
-      </div>
       {% else %}
-      <!-- ── Renode embarqué (côté serveur) ── -->
-      <div style="padding:20px;background:rgba(10,14,26,0.4)">
+      <!-- ═══════════════════════════════════════════════
+           RENODE (ESP32 / STM32 / RP2040 / Pico / RPi)
+           Simulation serveur + visuel wokwi-elements
+      ════════════════════════════════════════════════ -->
+      <div style="padding:20px">
 
-        <!-- Barre de statut -->
-        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(21,101,192,0.1);border:1px solid rgba(33,150,243,0.2);border-radius:12px;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-          <span style="font-size:1.5rem">🔬</span>
+        <!-- Status bar -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(21,101,192,0.08);border:1px solid rgba(33,150,243,0.15);border-radius:10px;margin-bottom:16px;flex-wrap:wrap">
+          <span style="font-size:1.2rem">🔬</span>
           <div style="flex:1">
-            <p style="font-weight:700;color:white;font-size:0.875rem">{{ board.label if board else selected_board }} — Renode embarqué</p>
-            <p style="color:#64748b;font-size:0.72rem">Renode tourne sur le serveur · sortie UART en temps réel</p>
+            <p style="font-weight:700;color:white;font-size:0.82rem">{{ board.label if board else selected_board }} — Renode embarqué</p>
+            <p style="color:#64748b;font-size:0.7rem">Simulation sur le serveur · UART live · Visuel réactif</p>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748b" id="simStatusBadge">
-            <span class="dot-offline" id="simDot"></span>
-            <span id="simStatusText">Inactif</span>
+          <span id="simDot" class="dot-offline"></span>
+          <span id="simStatusText" style="font-size:0.72rem;color:#64748b">Inactif</span>
+          <label class="btn-ghost" style="font-size:0.75rem;cursor:pointer;padding:7px 12px">
+            📁 .elf
+            <input type="file" accept=".elf" id="firmwareInput" style="display:none" onchange="uploadFirmware(this)">
+          </label>
+          <button id="btnStart" class="btn-primary" style="font-size:0.75rem" onclick="startSim('{{ selected_board }}')">▶ Démarrer démo</button>
+          <button id="btnStop" class="btn-ghost" style="font-size:0.75rem;display:none" onclick="stopSim()">⏹ Arrêter</button>
+        </div>
+
+        <!-- Visual + Terminal -->
+        <div style="display:grid;grid-template-columns:1fr 240px;gap:16px;margin-bottom:14px">
+
+          <!-- UART Terminal -->
+          <div>
+            <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1;margin-bottom:6px">UART Monitor</p>
+            <div style="border-radius:10px;overflow:hidden;border:1px solid rgba(33,150,243,0.12)">
+              <div style="padding:6px 14px;background:rgba(5,8,16,0.9);border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.7rem;color:#64748b">
+                <span style="color:#f87171">●</span>
+                <span style="color:#fbbf24">●</span>
+                <span style="color:#4ade80">●</span>
+                <span style="margin-left:4px">{{ board.label if board else selected_board }}</span>
+                <button onclick="document.getElementById('renodeOut').innerHTML=''" style="margin-left:auto;background:none;border:none;color:#475569;cursor:pointer;font-size:0.68rem">Effacer</button>
+              </div>
+              <div id="renodeOut" style="height:320px;background:#050810;padding:12px 14px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#e2e8f0;line-height:1.7"></div>
+            </div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <!-- Upload firmware -->
-            <label class="btn-ghost" style="font-size:0.75rem;cursor:pointer;padding:7px 12px">
-              📁 Charger .elf
-              <input type="file" accept=".elf" id="firmwareInput" style="display:none" onchange="uploadFirmware(this)">
-            </label>
-            <button id="btnStart" class="btn-primary" style="font-size:0.75rem" onclick="startSim('{{ selected_board }}')">
-              ▶ Démarrer démo
-            </button>
-            <button id="btnStop" class="btn-ghost" style="font-size:0.75rem;display:none" onclick="stopSim()">
-              ⏹ Arrêter
-            </button>
+
+          <!-- Visual board + réactif -->
+          <div>
+            <p style="font-size:0.72rem;font-weight:600;color:#cbd5e1;margin-bottom:8px">Visualisation</p>
+            <div style="background:rgba(5,8,16,0.85);border:1px solid rgba(33,150,243,0.12);border-radius:12px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:12px">
+
+              <!-- Board SVG correct par carte -->
+              {% if selected_board == 'esp32' %}
+              <wokwi-esp32-devkit-v1 id="renodeBoard"></wokwi-esp32-devkit-v1>
+              {% elif selected_board in ['rp2040','pico'] %}
+              <wokwi-pi-pico id="renodeBoard"></wokwi-pi-pico>
+              {% else %}
+              <!-- STM32 / autres : on affiche un visuel générique -->
+              <div style="width:120px;height:80px;background:linear-gradient(135deg,#1a237e,#283593);border-radius:8px;border:2px solid #42A5F5;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px">
+                <span style="font-size:1.5rem">{{ board.icon if board else '🔲' }}</span>
+                <span style="font-size:0.6rem;color:#90CAF9;font-weight:600">{{ board.label if board else selected_board }}</span>
+              </div>
+              {% endif %}
+
+              <!-- LEDs GPIO réactives aux sorties UART -->
+              <div>
+                <p style="font-size:0.62rem;color:#475569;text-align:center;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">GPIO</p>
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+                  {% for i in range(4) %}
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+                    <wokwi-led id="rled{{ i }}" color="{{ ['red','green','blue','yellow'][i] }}" value="0"></wokwi-led>
+                    <span style="font-size:0.58rem;color:#475569">D{{ [2,3,4,5][i] }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <!-- NeoPixel status indicator -->
+              <div style="display:flex;gap:6px">
+                {% for i in range(4) %}
+                <wokwi-neopixel id="npx{{ i }}" color="#000000"></wokwi-neopixel>
+                {% endfor %}
+              </div>
+              <p style="font-size:0.6rem;color:#475569">Activité processeur</p>
+
+              <!-- Firmware info -->
+              <div id="fwInfo" style="display:none;padding:6px 10px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:6px;font-size:0.65rem;color:#4ade80;text-align:center">
+                ✓ <span id="fwName"></span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Infos firmware chargé -->
-        <div id="fwInfo" style="display:none;padding:8px 14px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:8px;margin-bottom:12px;font-size:0.75rem;color:#4ade80">
-          ✓ Firmware : <span id="fwName"></span>
-        </div>
-
-        <!-- Terminal xterm.js -->
-        <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(33,150,243,0.15);margin-bottom:12px">
-          <div style="padding:8px 14px;background:rgba(5,8,16,0.9);border-bottom:1px solid rgba(33,150,243,0.1);display:flex;align-items:center;gap:8px;font-size:0.72rem;color:#64748b">
-            <span style="color:#f87171">●</span>
-            <span style="color:#fbbf24">●</span>
-            <span style="color:#4ade80">●</span>
-            <span style="margin-left:8px">UART Monitor — {{ board.label if board else selected_board }}</span>
-            <button onclick="clearTerminal()" style="margin-left:auto;background:none;border:none;color:#475569;cursor:pointer;font-size:0.7rem">Effacer</button>
-          </div>
-          <div id="terminal" style="height:320px;background:#050810;padding:12px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:0.78rem;line-height:1.7;color:#e2e8f0"></div>
-        </div>
-
-        <!-- Actions secondaires -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn-ghost" style="font-size:0.75rem" onclick="switchTabById('ai')">
-            🧠 Générer du code avec Cognito
-          </button>
-          <span id="slotInfo" style="margin-left:auto;font-size:0.72rem;color:#475569;align-self:center"></span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-ghost" style="font-size:0.75rem" onclick="switchTabById('ai')">🧠 Générer du code avec Cognito</button>
+          <span id="slotInfo" style="margin-left:auto;font-size:0.7rem;color:#475569"></span>
         </div>
       </div>
       {% endif %}
     </div>
 
-    <!-- AI tab -->
+    <!-- ── AI tab ── -->
     <div id="tab-ai" class="tab-panel" style="display:none;padding:16px">
       <div style="background:rgba(10,14,26,0.6);border-radius:12px;overflow:hidden">
         <div style="padding:12px 16px;border-bottom:1px solid rgba(33,150,243,0.1)">
@@ -270,36 +292,31 @@ void loop() {
   </div>
 </div>
 
-<!-- wokwi-elements : composants visuels (LED, boutons...) -->
+<!-- wokwi-elements : composants visuels -->
 <script src="https://unpkg.com/@wokwi/elements/dist/wokwi-elements.bundle.js"></script>
 
 <script>
-// ── AVR Simulation (avr8js via ES module) ─────────────────────────────────────
-let avrRaf     = null;  // requestAnimationFrame handle
-let avrCpu     = null;
-const BOARD_FQBN = {
+// ════════════════════════════════════════════════
+// AVR IN-BROWSER (avr8js)
+// ════════════════════════════════════════════════
+let avrRaf   = null;
+let serialBuf = '';
+let lcdLines  = ['',''];
+const FQBN = {
   'arduino-uno':  'arduino:avr:uno',
   'arduino-nano': 'arduino:avr:nano',
   'arduino-mega': 'arduino:avr:mega',
 };
 
 function setAVRStatus(state) {
-  const dot  = document.getElementById('avrDot');
-  const txt  = document.getElementById('avrStatusText');
+  const colors = { ready:'#64748b', building:'#fbbf24', running:'#4ade80', error:'#f87171', stopped:'#64748b' };
+  const labels = { ready:'Prêt', building:'⏳ Compilation...', running:'▶ Simulation active', error:'✗ Erreur', stopped:'⏹ Arrêté' };
+  const dot = document.getElementById('avrDot');
+  const txt = document.getElementById('avrStatusText');
+  if (dot) dot.className = state === 'running' ? 'dot-online' : state === 'building' ? 'dot-warn' : state === 'error' ? 'dot-warn' : 'dot-offline';
+  if (txt) { txt.textContent = labels[state] || state; txt.style.color = colors[state] || '#64748b'; }
   const bRun = document.getElementById('btnCompile');
-  const bStp = document.getElementById('btnStop');
-  if (!dot) return;
-  const map = {
-    ready:    { cls:'dot-offline', label:'Prêt',                color:'#64748b' },
-    building: { cls:'dot-warn',    label:'⏳ Compilation...',   color:'#fbbf24' },
-    running:  { cls:'dot-online',  label:'▶ Simulation active', color:'#4ade80' },
-    error:    { cls:'dot-warn',    label:'✗ Erreur',            color:'#f87171' },
-    stopped:  { cls:'dot-offline', label:'⏹ Arrêté',           color:'#64748b' },
-  };
-  const cfg = map[state] || map.ready;
-  dot.className      = cfg.cls;
-  txt.textContent    = cfg.label;
-  txt.style.color    = cfg.color;
+  const bStp = document.getElementById('btnStopAvr');
   if (bRun) bRun.style.display = state === 'running' ? 'none' : '';
   if (bStp) bStp.style.display = state === 'running' ? ''     : 'none';
 }
@@ -307,218 +324,191 @@ function setAVRStatus(state) {
 function serialPrint(text, color) {
   const out = document.getElementById('serialOut');
   if (!out) return;
-  const span = document.createElement('span');
-  span.style.color = color || '#e2e8f0';
-  span.textContent = text;
-  out.appendChild(span);
+  const s = document.createElement('span');
+  s.style.color = color || '#e2e8f0';
+  s.textContent = text;
+  out.appendChild(s);
   out.scrollTop = out.scrollHeight;
-}
-
-// ── Composant additionnel ─────────────────────────────────────────────────────
-let lcdComponent = null;
-
-function updateExtraComponent() {
-  const val  = document.getElementById('extraComponent')?.value;
-  const area = document.getElementById('extraComponentArea');
-  if (!area) return;
-  area.innerHTML = '';
-  lcdComponent = null;
-
-  if (val === 'lcd') {
-    const lcd = document.createElement('wokwi-lcd1602');
-    lcd.id = 'lcdDisplay';
-    lcd.setAttribute('background', '#1a237e');
-    area.appendChild(lcd);
-    lcdComponent = lcd;
-  } else if (val === 'servo') {
-    const s = document.createElement('wokwi-servo');
-    s.id = 'servoVis';
-    area.appendChild(s);
-  } else if (val === 'seg7') {
-    const s = document.createElement('wokwi-7segment');
-    s.id = 'seg7Vis';
-    s.setAttribute('color', '#ff0000');
-    area.appendChild(s);
-  }
 }
 
 function setPinLED(pin, high) {
   const led = document.getElementById('led' + pin);
   if (led) led.value = high ? 1 : 0;
+  const servo = document.getElementById('servoEl');
+  if (servo && pin === 9) servo.angle = high ? 90 : 0;
+}
 
-  // Si servo sur D9 (PWM) — approximation visuelle
-  if (pin === 9) {
-    const servo = document.getElementById('servoVis');
-    if (servo) servo.angle = high ? 90 : 0;
+function updateExtraComponent() {
+  const val  = document.getElementById('extraComponent')?.value;
+  const slot = document.getElementById('extraSlot');
+  if (!slot) return;
+  slot.innerHTML = '';
+  if (val === 'lcd') {
+    slot.innerHTML = '<wokwi-lcd1602 id="lcdEl" background="#0d1b2a"></wokwi-lcd1602>';
+  } else if (val === 'servo') {
+    slot.innerHTML = '<wokwi-servo id="servoEl"></wokwi-servo>';
+  } else if (val === 'neopixel') {
+    slot.innerHTML = '<div style="display:flex;gap:4px">' + Array(8).fill('<wokwi-neopixel color="#000000"></wokwi-neopixel>').join('') + '</div>';
   }
 }
 
-// Envoyer texte vers LCD
 function lcdPrint(line1, line2) {
-  const lcd = document.getElementById('lcdDisplay');
+  const lcd = document.getElementById('lcdEl');
   if (!lcd) return;
-  lcd.setAttribute('line1', (line1 || '').substring(0, 16).padEnd(16));
-  lcd.setAttribute('line2', (line2 || '').substring(0, 16).padEnd(16));
+  lcd.setAttribute('line1', (line1||'').substring(0,16).padEnd(16));
+  lcd.setAttribute('line2', (line2||'').substring(0,16).padEnd(16));
 }
 
-// Intercepter Serial pour alimenter le LCD aussi
-let lcdLines = ['', ''];
 function onSerialByte(byte) {
   const ch = String.fromCharCode(byte);
   serialBuf += ch;
   if (ch === '\n') {
-    const line = serialBuf.replace('\n','').replace('\r','');
+    const line = serialBuf.replace(/[\r\n]/g,'');
     serialPrint(line + '\n', '#e2e8f0');
-    // Scroll LCD : line2 devient line1, nouvelle ligne en line2
     lcdLines[0] = lcdLines[1];
     lcdLines[1] = line;
     lcdPrint(lcdLines[0], lcdLines[1]);
     serialBuf = '';
   }
 }
-let serialBuf = '';
 
 function stopAVR() {
   if (avrRaf) { cancelAnimationFrame(avrRaf); avrRaf = null; }
-  avrCpu = null;
   [7,8,9,10,11,12,13].forEach(p => setPinLED(p, false));
   setAVRStatus('stopped');
 }
 
 async function compileAndRun() {
   stopAVR();
-  const code     = document.getElementById('arduinoCode')?.value;
-  const errBox   = document.getElementById('compileError');
-  const serialOut = document.getElementById('serialOut');
-  const board    = '{{ selected_board }}';
-  const fqbn     = BOARD_FQBN[board] || 'arduino:avr:uno';
-
-  if (errBox)    { errBox.style.display = 'none'; errBox.textContent = ''; }
-  if (serialOut) { serialOut.innerHTML = ''; }
-
+  const code   = document.getElementById('arduinoCode')?.value;
+  const errBox = document.getElementById('compileError');
+  const board  = '{{ selected_board }}';
+  const fqbn   = FQBN[board] || 'arduino:avr:uno';
+  if (errBox) { errBox.style.display='none'; errBox.textContent=''; }
+  document.getElementById('serialOut').innerHTML = '';
   setAVRStatus('building');
   serialPrint('[CognitoLab] Compilation en cours...\n', '#42A5F5');
 
   try {
     const res  = await fetch('/api/compile/arduino', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({code, fqbn}),
     });
     const data = await res.json();
-
     if (data.error) {
       setAVRStatus('error');
-      if (errBox) { errBox.style.display = 'block'; errBox.textContent = data.error; }
-      serialPrint('[Erreur de compilation]\n', '#f87171');
+      if (errBox) { errBox.style.display='block'; errBox.textContent=data.error; }
+      serialPrint('[Erreur de compilation]\n','#f87171');
       return;
     }
-
-    serialPrint('[CognitoLab] Compilation OK — démarrage de la simulation...\n', '#4ade80');
+    serialPrint('[CognitoLab] OK — démarrage simulation...\n','#4ade80');
     runHex(data.hex);
-
   } catch(e) {
     setAVRStatus('error');
-    serialPrint('[Erreur réseau] ' + e.message + '\n', '#f87171');
+    serialPrint('[Erreur réseau] '+e.message+'\n','#f87171');
   }
 }
 
 async function runHex(hexText) {
-  // Import avr8js dynamiquement
   const avr8 = await import('https://esm.sh/avr8js@0.14.3');
   const { CPU, avrInstruction, AVRIOPort, AVRUSART,
           portBConfig, portDConfig, usart0Config, loadHex } = avr8;
 
-  // ATmega328P : 32KB flash
   const progMem = new Uint16Array(0x8000);
   loadHex(hexText, progMem);
   const cpu = new CPU(progMem);
-  avrCpu = cpu;
 
-  // ── Port B (D8–D13) ──
-  // Arduino pin 13 = PB5, 12 = PB4, 11 = PB3, 10 = PB2, 9 = PB1, 8 = PB0
   const portB = new AVRIOPort(cpu, portBConfig);
   portB.addListener(() => {
-    setPinLED(13, portB.pinState(5) === 1);
-    setPinLED(12, portB.pinState(4) === 1);
-    setPinLED(11, portB.pinState(3) === 1);
-    setPinLED(10, portB.pinState(2) === 1);
-    setPinLED(9,  portB.pinState(1) === 1);
-    setPinLED(8,  portB.pinState(0) === 1);
+    setPinLED(13, portB.pinState(5)===1);
+    setPinLED(12, portB.pinState(4)===1);
+    setPinLED(11, portB.pinState(3)===1);
+    setPinLED(10, portB.pinState(2)===1);
+    setPinLED(9,  portB.pinState(1)===1);
+    setPinLED(8,  portB.pinState(0)===1);
   });
 
-  // ── Port D (D0–D7) ──
-  // Arduino pin 7 = PD7, 6 = PD6, 5 = PD5, 4 = PD4, 3 = PD3, 2 = PD2
   const portD = new AVRIOPort(cpu, portDConfig);
   portD.addListener(() => {
-    setPinLED(7, portD.pinState(7) === 1);
+    setPinLED(7, portD.pinState(7)===1);
   });
 
-  // ── UART Serial ──
   const usart = new AVRUSART(cpu, usart0Config, 16_000_000);
-  serialBuf = '';
-  lcdLines  = ['', ''];
+  serialBuf = ''; lcdLines = ['',''];
   usart.onByteTransmit = (byte) => onSerialByte(byte);
 
-  // ── Bouton D2 (Port D, bit 2) — entrée interactive ──
   const btnEl = document.getElementById('btnD2');
   if (btnEl) {
-    portD.setPin(2, true);  // pull-up : repos = HIGH
+    portD.setPin(2, true);
     btnEl.addEventListener('button-press',   () => portD.setPin(2, false));
     btnEl.addEventListener('button-release', () => portD.setPin(2, true));
   }
 
   setAVRStatus('running');
-
-  // ── Boucle de simulation : ~16M cycles/s (vitesse réelle Arduino 16MHz) ──
-  const CYCLES_PER_FRAME = Math.round(16_000_000 / 60);
+  const CYCLES = Math.round(16_000_000 / 60);
   function frame() {
-    for (let i = 0; i < CYCLES_PER_FRAME; i++) {
-      avrInstruction(cpu);
-      cpu.tick();
-    }
+    for (let i=0; i<CYCLES; i++) { avrInstruction(cpu); cpu.tick(); }
     usart.tick();
     avrRaf = requestAnimationFrame(frame);
   }
   avrRaf = requestAnimationFrame(frame);
 }
 
-// ── Simulation Renode ──────────────────────────────────────────────────────────
-let currentSessionId  = null;
+// ════════════════════════════════════════════════
+// RENODE SERVER-SIDE
+// ════════════════════════════════════════════════
+let currentSessionId   = null;
 let currentEventSource = null;
-let uploadedFirmware  = null;
+let uploadedFirmware   = null;
+let npxFrame = 0;
 
-function termLine(text, color) {
-  const term = document.getElementById('terminal');
-  if (!term) return;
-  const line = document.createElement('div');
-  line.style.color = color || '#e2e8f0';
-  line.textContent = text;
-  term.appendChild(line);
-  term.scrollTop = term.scrollHeight;
+// Animation processeur (NeoPixels) pendant simulation active
+function animateNpx(active) {
+  const npxEls = [0,1,2,3].map(i => document.getElementById('npx'+i));
+  if (!npxEls[0]) return;
+  if (!active) { npxEls.forEach(n => { if(n) n.color='#000000'; }); return; }
+  npxFrame++;
+  const colors = ['#1565C0','#0288D1','#00BCD4','#42A5F5'];
+  npxEls.forEach((n,i) => {
+    if(n) n.setAttribute('color', npxFrame % 4 === i ? colors[i] : '#000000');
+  });
+  setTimeout(() => animateNpx(currentSessionId !== null), 300);
 }
 
-function clearTerminal() {
-  const term = document.getElementById('terminal');
-  if (term) term.innerHTML = '';
+// Parse UART pour allumer LEDs visuelles
+let lineCount = 0;
+function parseUartForVisual(line) {
+  lineCount++;
+  // Animation simple des LEDs réactif au flux UART
+  const led = document.getElementById('rled' + (lineCount % 4));
+  if (led) {
+    led.value = 1;
+    setTimeout(() => { if(led) led.value = 0; }, 250);
+  }
 }
 
 function setSimStatus(state) {
-  // state: 'idle' | 'running' | 'error'
   const dot  = document.getElementById('simDot');
-  const text = document.getElementById('simStatusText');
-  const btnStart = document.getElementById('btnStart');
-  const btnStop  = document.getElementById('btnStop');
-  if (!dot) return;
-  const map = {
-    idle:    { cls: 'dot-offline', label: 'Inactif',       start: true,  stop: false },
-    running: { cls: 'dot-online',  label: 'En cours...',   start: false, stop: true  },
-    error:   { cls: 'dot-warn',    label: 'Erreur',        start: true,  stop: false },
-  };
-  const cfg = map[state] || map.idle;
-  dot.className  = cfg.cls;
-  text.textContent = cfg.label;
-  if (btnStart) btnStart.style.display = cfg.start ? '' : 'none';
-  if (btnStop)  btnStop.style.display  = cfg.stop  ? '' : 'none';
+  const txt  = document.getElementById('simStatusText');
+  const bS   = document.getElementById('btnStart');
+  const bStp = document.getElementById('btnStop');
+  const colors = { idle:'#64748b', running:'#4ade80', error:'#f87171' };
+  const labels = { idle:'Inactif', running:'▶ En cours', error:'✗ Erreur' };
+  if (dot) dot.className = state==='running' ? 'dot-online' : state==='error' ? 'dot-warn' : 'dot-offline';
+  if (txt) { txt.textContent = labels[state]||state; txt.style.color = colors[state]||'#64748b'; }
+  if (bS)  bS.style.display  = state==='running' ? 'none' : '';
+  if (bStp) bStp.style.display = state==='running' ? ''   : 'none';
+}
+
+function renodePrint(text, color) {
+  const out = document.getElementById('renodeOut');
+  if (!out) return;
+  const d = document.createElement('div');
+  d.style.color = color || '#e2e8f0';
+  d.textContent = text;
+  out.appendChild(d);
+  out.scrollTop = out.scrollHeight;
+  if (color !== '#42A5F5' && color !== '#4ade80') parseUartForVisual(text);
 }
 
 async function uploadFirmware(input) {
@@ -526,95 +516,88 @@ async function uploadFirmware(input) {
   if (!file) return;
   const fd = new FormData();
   fd.append('firmware', file);
-  termLine('[Upload] Envoi du firmware...', '#fbbf24');
+  renodePrint('[Upload] Envoi firmware...','#fbbf24');
   try {
-    const res  = await fetch('/api/simulate/upload', {method:'POST', body: fd});
+    const res  = await fetch('/api/simulate/upload', {method:'POST', body:fd});
     const data = await res.json();
     if (data.firmware_path) {
       uploadedFirmware = data.firmware_path;
       document.getElementById('fwInfo').style.display = 'block';
       document.getElementById('fwName').textContent   = data.filename;
-      document.getElementById('btnStart').textContent  = '▶ Simuler firmware';
-      termLine(`[Upload] ✓ ${data.filename} prêt`, '#4ade80');
+      document.getElementById('btnStart').textContent = '▶ Simuler firmware';
+      renodePrint('✓ '+data.filename+' prêt','#4ade80');
     } else {
-      termLine(`[Upload] Erreur : ${data.error}`, '#f87171');
+      renodePrint('[Upload] Erreur: '+data.error,'#f87171');
     }
-  } catch(e) {
-    termLine(`[Upload] Erreur réseau : ${e.message}`, '#f87171');
-  }
+  } catch(e) { renodePrint('[Upload] Erreur réseau: '+e.message,'#f87171'); }
 }
 
 async function startSim(board) {
   if (currentSessionId) await stopSim();
-  clearTerminal();
+  document.getElementById('renodeOut').innerHTML = '';
+  lineCount = 0;
   setSimStatus('running');
-  termLine('[CognitoLab] Connexion au serveur de simulation...', '#42A5F5');
+  renodePrint('[CognitoLab] Connexion au serveur Renode...','#42A5F5');
+  animateNpx(true);
 
   try {
     const body = {board};
     if (uploadedFirmware) body.firmware_path = uploadedFirmware;
-
     const res  = await fetch('/api/simulate/start', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body),
     });
     const data = await res.json();
     if (data.error) {
-      termLine(`[Erreur] ${data.error}`, '#f87171');
+      renodePrint('[Erreur] '+data.error,'#f87171');
       setSimStatus('error');
+      animateNpx(false);
       return;
     }
-
     currentSessionId = data.session_id;
-    termLine(`[CognitoLab] Session ${currentSessionId} — carte : ${data.board}`, '#64748b');
+    renodePrint('[Session '+data.session_id+'] carte: '+data.board,'#64748b');
 
-    // SSE stream
-    currentEventSource = new EventSource(`/api/simulate/stream/${currentSessionId}`);
+    currentEventSource = new EventSource('/api/simulate/stream/'+currentSessionId);
     currentEventSource.onmessage = (e) => {
-      const txt = e.data;
-      if (txt === '[ping]' || txt.startsWith(': ')) return;
-      const color = txt.startsWith('[CognitoLab]') ? '#42A5F5'
-                  : txt.startsWith('[ERREUR]')     ? '#f87171'
-                  : txt.startsWith('[warn]')       ? '#fbbf24'
+      if (!e.data || e.data.startsWith(': ')) return;
+      const color = e.data.startsWith('[CognitoLab]') ? '#42A5F5'
+                  : e.data.startsWith('[ERREUR]')     ? '#f87171'
                   : '#e2e8f0';
-      termLine(txt, color);
+      renodePrint(e.data, color);
     };
     currentEventSource.addEventListener('done', () => {
-      setSimStatus('idle');
-      currentSessionId = null;
-      currentEventSource?.close();
-      currentEventSource = null;
+      setSimStatus('idle'); animateNpx(false);
+      currentSessionId=null; currentEventSource?.close(); currentEventSource=null;
     });
     currentEventSource.onerror = () => {
-      termLine('[CognitoLab] Connexion SSE perdue.', '#f87171');
-      setSimStatus('error');
+      renodePrint('[CognitoLab] Connexion SSE perdue.','#f87171');
+      setSimStatus('error'); animateNpx(false);
     };
 
-  } catch(e) {
-    termLine(`[Erreur] ${e.message}`, '#f87171');
-    setSimStatus('error');
-  }
-
-  // Afficher slots libres
-  try {
-    const s = await (await fetch('/api/simulate/status')).json();
+    const s = await (await fetch('/api/simulate/status')).json().catch(()=>({}));
     const el = document.getElementById('slotInfo');
-    if (el) el.textContent = `${s.active}/${s.max} simulations actives`;
-  } catch {}
+    if (el && s.active !== undefined) el.textContent = s.active+'/'+s.max+' simulations actives';
+
+  } catch(e) {
+    renodePrint('[Erreur] '+e.message,'#f87171');
+    setSimStatus('error'); animateNpx(false);
+  }
 }
 
 async function stopSim() {
-  if (!currentSessionId) return;
-  currentEventSource?.close();
-  currentEventSource = null;
-  await fetch(`/api/simulate/stop/${currentSessionId}`, {method:'POST'}).catch(()=>{});
-  termLine('[CognitoLab] Simulation arrêtée.', '#64748b');
-  currentSessionId = null;
-  setSimStatus('idle');
+  currentEventSource?.close(); currentEventSource=null;
+  if (currentSessionId) {
+    await fetch('/api/simulate/stop/'+currentSessionId, {method:'POST'}).catch(()=>{});
+    renodePrint('[CognitoLab] Simulation arrêtée.','#64748b');
+    currentSessionId=null;
+  }
+  setSimStatus('idle'); animateNpx(false);
+  [0,1,2,3].forEach(i => { const l=document.getElementById('rled'+i); if(l) l.value=0; });
 }
 
-// ── Tabs ───────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════
+// TABS + AI
+// ════════════════════════════════════════════════
 function switchTab(id, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.style.display='none');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
