@@ -157,11 +157,13 @@
         <p style="color:#64748b;font-size:0.875rem;margin-bottom:20px">{{ content.quiz|length }} questions · Sélectionnez la bonne réponse</p>
         <form id="quizForm">
           {% for q in content.quiz %}
-          <div class="quiz-question" id="q{{ loop.index0 }}">
+          {% set qi = loop.index0 %}
+          <div class="quiz-question" id="q{{ qi }}">
             <h4>{{ loop.index }}. {{ q.q }}</h4>
             {% for opt in q.opts %}
-            <div class="quiz-option" id="q{{ loop.outer.loop.index0 }}_o{{ loop.index0 }}"
-                 onclick="selectOption({{ loop.outer.loop.index0 }}, {{ loop.index0 }}, {{ q.answer }})">
+            {% set oi = loop.index0 %}
+            <div class="quiz-option" id="q{{ qi }}_o{{ oi }}"
+                 onclick="selectOption({{ qi }}, {{ oi }}, {{ q.answer }})">
               <div class="quiz-radio"></div>
               {{ opt }}
             </div>
