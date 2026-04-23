@@ -3,71 +3,261 @@
 {% block page_title %}Bibliothèque Composants{% endblock %}
 
 {% block content %}
+<!-- wokwi-elements pour rendu SVG réel des composants -->
+<script src="https://unpkg.com/@wokwi/elements/dist/wokwi-elements.bundle.js"></script>
+
 <div class="space-y">
-  <div>
-    <h1 class="section-title">Bibliothèque Composants</h1>
-    <p class="section-sub">Explorez chaque composant avec fiche technique, câblage et code</p>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 class="section-title">Bibliothèque Composants</h1>
+      <p class="section-sub">{{ total }} composants — fiches techniques, pinout, code exemple et rendu 3D</p>
+    </div>
+    <div class="badge badge-blue" style="padding:8px 14px">{{ components|length }} affichés</div>
   </div>
 
-  <!-- Category filter -->
-  <div class="board-selector">
-    {% for cat in categories %}
-    <a href="/components?cat={{ cat }}" class="board-chip {% if selected_cat == cat %}active{% endif %}">{{ cat }}</a>
-    {% endfor %}
-  </div>
+  <!-- Recherche + Filtres -->
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <form method="get" action="/components" style="display:flex;gap:8px;align-items:center">
+      <input type="hidden" name="cat" value="{{ selected_cat }}">
+      <input type="text" name="q" value="{{ search }}" class="cl-input"
+        style="max-width:340px" placeholder="🔍 Rechercher un composant...">
+      <button type="submit" class="btn-primary" style="font-size:0.8rem">Chercher</button>
+      {% if search %}
+      <a href="/components?cat={{ selected_cat }}" class="btn-ghost" style="font-size:0.8rem">✕ Effacer</a>
+      {% endif %}
+    </form>
 
-  <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
-    <!-- Grid -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
-      {% for c in components %}
-      <a href="/components?cat={{ selected_cat }}&comp={{ c.id }}" class="comp-card {% if selected_comp and selected_comp.id == c.id %}selected{% endif %}">
-        <div style="font-size:2rem;margin-bottom:8px">{{ c.icon }}</div>
-        <p style="font-size:0.75rem;font-weight:700;color:white;line-height:1.3">{{ c.name }}</p>
-        <p style="font-size:0.7rem;color:#64748b;margin-top:2px">{{ c.category }}</p>
-        <div style="margin-top:8px"><span class="badge badge-blue">{{ c.voltage }}</span></div>
+    <!-- Filtres catégories -->
+    <div class="board-selector">
+      {% for cat in categories %}
+      <a href="/components?cat={{ cat }}{% if search %}&q={{ search }}{% endif %}"
+         class="board-chip {% if selected_cat == cat %}active{% endif %}">
+        {{ {'Tous':'Tous 🗂','Microcontrôleurs':'🔵 Microcontrôleurs','Capteurs':'🌡 Capteurs',
+            'Actionneurs':'⚙ Actionneurs','Affichage':'💡 Affichage','Communication':'📡 Communication',
+            'Passifs':'🔌 Passifs','Alimentation':'🔋 Alimentation'}.get(cat, cat) }}
       </a>
       {% endfor %}
+    </div>
+  </div>
+
+  <!-- Layout grille + panneau -->
+  <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start">
+
+    <!-- Grille composants -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+      {% for c in components %}
+      <a href="/components?cat={{ selected_cat }}&comp={{ c.id }}{% if search %}&q={{ search }}{% endif %}"
+         class="comp-card {% if selected_comp and selected_comp.id == c.id %}selected{% endif %}"
+         title="{{ c.name }}">
+
+        <!-- Rendu wokwi-element ou SVG générique -->
+        <div style="height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;overflow:hidden">
+          {% if c.wokwi %}
+            {% if c.wokwi == 'wokwi-led' %}
+              <wokwi-led color="red" value="1" style="transform:scale(1.5)"></wokwi-led>
+            {% elif c.wokwi == 'wokwi-rgb-led' %}
+              <wokwi-rgb-led r="255" g="0" b="128" style="transform:scale(1.5)"></wokwi-rgb-led>
+            {% elif c.wokwi == 'wokwi-neopixel' %}
+              <wokwi-neopixel color="#ff00ff" style="transform:scale(2)"></wokwi-neopixel>
+            {% elif c.wokwi == 'wokwi-resistor' %}
+              <wokwi-resistor value="220" style="transform:scale(0.8)rotate(-90deg)"></wokwi-resistor>
+            {% elif c.wokwi == 'wokwi-potentiometer' %}
+              <wokwi-potentiometer style="transform:scale(0.7)"></wokwi-potentiometer>
+            {% elif c.wokwi == 'wokwi-servo' %}
+              <wokwi-servo angle="90" style="transform:scale(0.55)"></wokwi-servo>
+            {% elif c.wokwi == 'wokwi-buzzer' %}
+              <wokwi-buzzer style="transform:scale(0.8)"></wokwi-buzzer>
+            {% elif c.wokwi == 'wokwi-relay-module' %}
+              <wokwi-relay-module style="transform:scale(0.45)"></wokwi-relay-module>
+            {% elif c.wokwi == 'wokwi-dht22' %}
+              <wokwi-dht22 style="transform:scale(0.8)"></wokwi-dht22>
+            {% elif c.wokwi == 'wokwi-hc-sr04' %}
+              <wokwi-hc-sr04 style="transform:scale(0.55)"></wokwi-hc-sr04>
+            {% elif c.wokwi == 'wokwi-ssd1306' %}
+              <wokwi-ssd1306 style="transform:scale(0.45)"></wokwi-ssd1306>
+            {% elif c.wokwi == 'wokwi-lcd1602' %}
+              <wokwi-lcd1602 style="transform:scale(0.35)"></wokwi-lcd1602>
+            {% elif c.wokwi == 'wokwi-7segment' %}
+              <wokwi-7segment style="transform:scale(0.7)"></wokwi-7segment>
+            {% elif c.wokwi == 'wokwi-led-bar-graph' %}
+              <wokwi-led-bar-graph style="transform:scale(0.6)"></wokwi-led-bar-graph>
+            {% elif c.wokwi == 'wokwi-arduino-uno' %}
+              <wokwi-arduino-uno style="transform:scale(0.2)transform-origin:top left"></wokwi-arduino-uno>
+            {% elif c.wokwi == 'wokwi-arduino-nano' %}
+              <wokwi-arduino-nano style="transform:scale(0.28)"></wokwi-arduino-nano>
+            {% elif c.wokwi == 'wokwi-arduino-mega' %}
+              <wokwi-arduino-mega style="transform:scale(0.15)"></wokwi-arduino-mega>
+            {% elif c.wokwi == 'wokwi-esp32-devkit-v1' %}
+              <wokwi-esp32-devkit-v1 style="transform:scale(0.25)"></wokwi-esp32-devkit-v1>
+            {% elif c.wokwi == 'wokwi-pi-pico' %}
+              <wokwi-pi-pico style="transform:scale(0.22)"></wokwi-pi-pico>
+            {% elif c.wokwi == 'wokwi-gas-sensor' %}
+              <wokwi-gas-sensor style="transform:scale(0.6)"></wokwi-gas-sensor>
+            {% elif c.wokwi == 'wokwi-mpu6050' %}
+              <wokwi-mpu6050 style="transform:scale(0.6)"></wokwi-mpu6050>
+            {% elif c.wokwi == 'wokwi-ir-receiver' %}
+              <wokwi-ir-receiver style="transform:scale(0.9)"></wokwi-ir-receiver>
+            {% elif c.wokwi == 'wokwi-nrf24l01' %}
+              <wokwi-nrf24l01 style="transform:scale(0.5)"></wokwi-nrf24l01>
+            {% elif c.wokwi == 'wokwi-rotary-encoder' %}
+              <wokwi-rotary-encoder style="transform:scale(0.7)"></wokwi-rotary-encoder>
+            {% elif c.wokwi == 'wokwi-membrane-keypad' %}
+              <wokwi-membrane-keypad style="transform:scale(0.35)"></wokwi-membrane-keypad>
+            {% elif c.wokwi == 'wokwi-tm1637-7segment' %}
+              <wokwi-tm1637-7segment style="transform:scale(0.5)"></wokwi-tm1637-7segment>
+            {% else %}
+              <div style="font-size:2.5rem">{{ c.get('icon','🔲') }}</div>
+            {% endif %}
+          {% else %}
+            <!-- Composant sans wokwi-element : icône SVG custom -->
+            <div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,rgba(21,101,192,0.3),rgba(0,188,212,0.15));border:1px solid rgba(33,150,243,0.2);display:flex;align-items:center;justify-content:center;font-size:2rem">
+              {{ {'Microcontrôleurs':'💎','Capteurs':'🌡','Actionneurs':'⚙','Affichage':'💡','Communication':'📡','Passifs':'🔌','Alimentation':'🔋'}.get(c.category,'🔲') }}
+            </div>
+          {% endif %}
+        </div>
+
+        <p style="font-size:0.72rem;font-weight:700;color:white;line-height:1.3;text-align:center">{{ c.name }}</p>
+        <p style="font-size:0.65rem;color:#64748b;margin-top:2px;text-align:center">{{ c.category }}</p>
+        <div style="margin-top:6px;display:flex;justify-content:center">
+          <span class="badge badge-blue" style="font-size:0.6rem;padding:2px 7px">{{ c.voltage }}</span>
+        </div>
+      </a>
+      {% endfor %}
+
       {% if not components %}
-      <div style="grid-column:1/-1;text-align:center;padding:40px;color:#64748b">
-        Aucun composant dans cette catégorie
+      <div style="grid-column:1/-1;text-align:center;padding:60px;color:#64748b">
+        <div style="font-size:3rem;margin-bottom:12px">🔍</div>
+        <p>Aucun composant trouvé pour "{{ search }}"</p>
       </div>
       {% endif %}
     </div>
 
-    <!-- Detail panel -->
-    <div class="glass-card" style="position:sticky;top:80px;overflow:hidden;padding:0">
+    <!-- Panneau détail sticky -->
+    <div style="position:sticky;top:80px">
       {% if selected_comp %}
-      <div style="padding:20px;background:linear-gradient(135deg,rgba(21,101,192,0.2),rgba(0,188,212,0.1))">
-        <div style="font-size:3rem;margin-bottom:10px">{{ selected_comp.icon }}</div>
-        <h3 style="font-weight:700;color:white;font-size:1rem">{{ selected_comp.name }}</h3>
-        <p style="font-size:0.75rem;color:#42A5F5;margin-top:2px">{{ selected_comp.category }}</p>
-      </div>
-      <div style="padding:16px">
-        <p style="font-size:0.8rem;color:#94a3b8;line-height:1.6;margin-bottom:14px">{{ selected_comp.desc }}</p>
-        <div style="margin-bottom:14px">
-          <p style="font-size:0.7rem;font-weight:600;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Spécifications</p>
-          <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px">
-            <span style="color:#64748b">Tension</span>
-            <span style="color:#42A5F5">{{ selected_comp.voltage }}</span>
+      <div class="glass-card" style="padding:0;overflow:hidden">
+
+        <!-- Header avec rendu wokwi grand format -->
+        <div style="padding:24px;background:linear-gradient(135deg,rgba(21,101,192,0.2),rgba(0,188,212,0.1));display:flex;flex-direction:column;align-items:center;min-height:180px;justify-content:center">
+          <div style="transform-origin:center;display:flex;align-items:center;justify-content:center;height:140px;width:100%;overflow:hidden">
+            {% if selected_comp.wokwi %}
+              {% set w = selected_comp.wokwi %}
+              {% if w == 'wokwi-arduino-uno' %}
+                <wokwi-arduino-uno style="transform:scale(0.4)"></wokwi-arduino-uno>
+              {% elif w == 'wokwi-arduino-nano' %}
+                <wokwi-arduino-nano style="transform:scale(0.55)"></wokwi-arduino-nano>
+              {% elif w == 'wokwi-arduino-mega' %}
+                <wokwi-arduino-mega style="transform:scale(0.28)"></wokwi-arduino-mega>
+              {% elif w == 'wokwi-esp32-devkit-v1' %}
+                <wokwi-esp32-devkit-v1 style="transform:scale(0.5)"></wokwi-esp32-devkit-v1>
+              {% elif w == 'wokwi-pi-pico' %}
+                <wokwi-pi-pico style="transform:scale(0.45)"></wokwi-pi-pico>
+              {% elif w == 'wokwi-servo' %}
+                <wokwi-servo angle="90" style="transform:scale(1.1)"></wokwi-servo>
+              {% elif w == 'wokwi-dht22' %}
+                <wokwi-dht22 style="transform:scale(1.4)"></wokwi-dht22>
+              {% elif w == 'wokwi-hc-sr04' %}
+                <wokwi-hc-sr04 style="transform:scale(1.0)"></wokwi-hc-sr04>
+              {% elif w == 'wokwi-led' %}
+                <wokwi-led color="red" value="1" style="transform:scale(3)"></wokwi-led>
+              {% elif w == 'wokwi-rgb-led' %}
+                <wokwi-rgb-led r="255" g="0" b="128" style="transform:scale(3)"></wokwi-rgb-led>
+              {% elif w == 'wokwi-neopixel' %}
+                <wokwi-neopixel color="#42A5F5" style="transform:scale(4)"></wokwi-neopixel>
+              {% elif w == 'wokwi-led-bar-graph' %}
+                <wokwi-led-bar-graph style="transform:scale(1.1)"></wokwi-led-bar-graph>
+              {% elif w == 'wokwi-lcd1602' %}
+                <wokwi-lcd1602 line1="  CognitoLab  " line2="  composants  " style="transform:scale(0.65)"></wokwi-lcd1602>
+              {% elif w == 'wokwi-ssd1306' %}
+                <wokwi-ssd1306 style="transform:scale(0.85)"></wokwi-ssd1306>
+              {% elif w == 'wokwi-7segment' %}
+                <wokwi-7segment style="transform:scale(1.4)"></wokwi-7segment>
+              {% elif w == 'wokwi-tm1637-7segment' %}
+                <wokwi-tm1637-7segment style="transform:scale(0.9)"></wokwi-tm1637-7segment>
+              {% elif w == 'wokwi-buzzer' %}
+                <wokwi-buzzer style="transform:scale(1.5)"></wokwi-buzzer>
+              {% elif w == 'wokwi-relay-module' %}
+                <wokwi-relay-module style="transform:scale(0.8)"></wokwi-relay-module>
+              {% elif w == 'wokwi-resistor' %}
+                <wokwi-resistor value="220" style="transform:scale(1.5)"></wokwi-resistor>
+              {% elif w == 'wokwi-potentiometer' %}
+                <wokwi-potentiometer style="transform:scale(1.3)"></wokwi-potentiometer>
+              {% elif w == 'wokwi-gas-sensor' %}
+                <wokwi-gas-sensor style="transform:scale(1.0)"></wokwi-gas-sensor>
+              {% elif w == 'wokwi-mpu6050' %}
+                <wokwi-mpu6050 style="transform:scale(1.0)"></wokwi-mpu6050>
+              {% elif w == 'wokwi-ir-receiver' %}
+                <wokwi-ir-receiver style="transform:scale(2.0)"></wokwi-ir-receiver>
+              {% elif w == 'wokwi-nrf24l01' %}
+                <wokwi-nrf24l01 style="transform:scale(0.9)"></wokwi-nrf24l01>
+              {% elif w == 'wokwi-rotary-encoder' %}
+                <wokwi-rotary-encoder style="transform:scale(1.3)"></wokwi-rotary-encoder>
+              {% elif w == 'wokwi-membrane-keypad' %}
+                <wokwi-membrane-keypad style="transform:scale(0.6)"></wokwi-membrane-keypad>
+              {% else %}
+                <div style="font-size:4rem">🔲</div>
+              {% endif %}
+            {% else %}
+              <div style="font-size:5rem">{{ {'Microcontrôleurs':'💎','Capteurs':'🌡','Actionneurs':'⚙','Affichage':'💡','Communication':'📡','Passifs':'🔌','Alimentation':'🔋'}.get(selected_comp.category,'🔲') }}</div>
+            {% endif %}
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:0.75rem">
-            <span style="color:#64748b">Catégorie</span>
-            <span style="color:#cbd5e1">{{ selected_comp.category }}</span>
+          <h3 style="font-weight:800;color:white;font-size:1rem;margin-top:8px;text-align:center">{{ selected_comp.name }}</h3>
+          <p style="font-size:0.72rem;color:#42A5F5;margin-top:2px">{{ selected_comp.category }}</p>
+        </div>
+
+        <!-- Détails -->
+        <div style="padding:16px">
+          <!-- Description -->
+          <p style="font-size:0.78rem;color:#94a3b8;line-height:1.7;margin-bottom:14px">{{ selected_comp.desc }}</p>
+
+          <!-- Specs grid -->
+          <div style="margin-bottom:14px">
+            <p style="font-size:0.68rem;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Spécifications</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              {% for label, key, color in [
+                ('Tension',     'voltage',  '#42A5F5'),
+                ('Courant',     'current',  '#4ade80'),
+                ('Protocole',   'protocol', '#fbbf24'),
+                ('Boîtier',     'package',  '#94a3b8'),
+              ] %}
+              <div style="padding:8px 10px;background:rgba(10,14,26,0.6);border-radius:8px;border:1px solid rgba(33,150,243,0.08)">
+                <p style="font-size:0.62rem;color:#475569;margin-bottom:2px">{{ label }}</p>
+                <p style="font-size:0.72rem;font-weight:600;color:{{ color }}">{{ selected_comp.get(key,'—') }}</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Pinout -->
+          {% if selected_comp.get('pinout') %}
+          <div style="margin-bottom:14px;padding:10px 12px;background:rgba(10,14,26,0.6);border-radius:8px;border:1px solid rgba(33,150,243,0.08)">
+            <p style="font-size:0.68rem;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Pinout</p>
+            <p style="font-size:0.7rem;color:#64748b;line-height:1.6;font-family:'JetBrains Mono',monospace">{{ selected_comp.pinout }}</p>
+          </div>
+          {% endif %}
+
+          <!-- Code exemple -->
+          <div style="margin-bottom:14px">
+            <p style="font-size:0.68rem;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Code exemple</p>
+            <pre class="code-area" style="font-size:0.68rem;max-height:180px;overflow:auto">{{ selected_comp.code }}</pre>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex;gap:8px">
+            <a href="/simulator" class="btn-primary" style="flex:1;text-align:center;font-size:0.75rem">⚡ Simuler</a>
+            <button class="btn-ghost" style="font-size:0.75rem" onclick="askCognito('{{ selected_comp.name|e }}')">🧠 Cognito</button>
           </div>
         </div>
-        <div style="margin-bottom:14px">
-          <p style="font-size:0.7rem;font-weight:600;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Code exemple</p>
-          <pre class="code-area" style="font-size:0.7rem;overflow:auto;max-height:150px">{{ selected_comp.code }}</pre>
-        </div>
-        <div style="display:flex;gap:8px">
-          <a href="/simulator" class="btn-primary" style="flex:1;text-align:center;font-size:0.75rem">⚡ Simuler</a>
-          <button class="btn-ghost" style="font-size:0.75rem" onclick="askCognito('{{ selected_comp.name }}')">🧠 Cognito</button>
-        </div>
       </div>
+
       {% else %}
-      <div style="padding:40px;text-align:center;color:#64748b">
-        <div style="font-size:3rem;margin-bottom:12px">🧩</div>
-        <p style="font-size:0.875rem">Sélectionnez un composant<br>pour voir sa fiche technique</p>
+      <!-- Aucun composant sélectionné -->
+      <div class="glass-card" style="text-align:center;padding:48px 24px">
+        <div style="font-size:4rem;margin-bottom:16px">🧩</div>
+        <p style="font-size:0.9rem;font-weight:700;color:white;margin-bottom:8px">Sélectionnez un composant</p>
+        <p style="font-size:0.8rem;color:#64748b;line-height:1.6">
+          Cliquez sur un composant pour voir sa fiche technique, son pinout, son rendu 3D et son code exemple.
+        </p>
       </div>
       {% endif %}
     </div>
@@ -78,7 +268,8 @@
 function askCognito(compName) {
   toggleCognito();
   setTimeout(() => {
-    document.getElementById('cognitoInput').value = `Explique-moi le composant ${compName} : comment le câbler et l'utiliser avec Arduino ?`;
+    document.getElementById('cognitoInput').value =
+      `Explique-moi le composant ${compName} : comment le câbler avec un Arduino, son pinout, et un exemple de code complet ?`;
   }, 300);
 }
 </script>

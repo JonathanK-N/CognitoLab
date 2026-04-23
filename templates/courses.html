@@ -65,10 +65,10 @@
           {% if prog > 0 %}<span style="color:#42A5F5">{{ prog }}%</span>{% endif %}
         </div>
         <div style="display:flex;gap:6px">
-          <button class="btn-primary" style="flex:1;font-size:0.75rem;padding:7px" onclick="updateProgress('{{ c.id }}')">
+          <a href="/courses/{{ c.id }}" class="btn-primary" style="flex:1;font-size:0.75rem;padding:7px;text-decoration:none;text-align:center">
             {% if progresses.get(c.id, 0) > 0 %}▶ Continuer{% else %}▶ Commencer{% endif %}
-          </button>
-          <button class="btn-ghost" style="font-size:0.75rem;padding:7px 12px">Quiz</button>
+          </a>
+          <a href="/courses/{{ c.id }}?tab=quiz" class="btn-ghost" style="font-size:0.75rem;padding:7px 12px;text-decoration:none">Quiz</a>
         </div>
       </div>
     </div>
