@@ -554,6 +554,56 @@ COURSE_CONTENT = {
   }
 }
 
+COURSE_VIDEOS = {
+  "arduino-basics": [
+    {"title": "LESSON 1: Simple Introduction to the Arduino", "channel": "Paul McWhorter", "id": "d8_xXNcGYgo", "topic": "Introduction"},
+    {"title": "Arduino Tutorial 1: Setting Up for Absolute Beginners", "channel": "Paul McWhorter", "id": "fJWR7dBuc18", "topic": "Installation"},
+    {"title": "Arduino Tutorial 2: Understanding LEDs", "channel": "Paul McWhorter", "id": "9uHZB7-T_XA", "topic": "GPIO Numérique"},
+    {"title": "Arduino Tutorial 4: Understanding Variables", "channel": "Paul McWhorter", "id": "nPOKOi1jIK0", "topic": "Variables"},
+    {"title": "Arduino Tutorial 7: Analog Write (PWM)", "channel": "Paul McWhorter", "id": "6CRhpUV92ww", "topic": "PWM"},
+  ],
+  "esp32-iot": [
+    {"title": "Introduction to ESP32 - Getting Started", "channel": "DroneBot Workshop", "id": "xPlN_Tk3VLQ", "topic": "Introduction"},
+    {"title": "ESP32 Wi-Fi & MQTT Tutorial — IoT Monitoring", "channel": "DroneBot Workshop", "id": "o7kSmMEFosM", "topic": "WiFi & MQTT"},
+    {"title": "Simple ESP32 IoT Sensor Node — WiFi MQTT", "channel": "DroneBot Workshop", "id": "x5A5S0hoyJ0", "topic": "Capteurs IoT"},
+    {"title": "ESP32 Guide 2026", "channel": "DroneBot Workshop", "id": "CfIjInYch7U", "topic": "Vue d'ensemble"},
+  ],
+  "rpi-linux": [
+    {"title": "Raspberry Pi GPIO Programming with Python — Part 1", "channel": "Random Nerd Tutorials", "id": "bbI43MqPE-I", "topic": "GPIO Python"},
+    {"title": "You Need to Learn Python 2026 — Raspberry Pi Beginner Guide", "channel": "YouTube", "id": "kugDbgi8uP8", "topic": "Python Embarqué"},
+    {"title": "Raspberry Pi GPIO Python Guide", "channel": "YouTube", "id": "n5t8brVw4kQ", "topic": "GPIO"},
+    {"title": "GPIO Basics with LED — Raspberry Pi and Python", "channel": "sentdex", "id": "WLo5Rgvj6qo", "topic": "LED & GPIO"},
+  ],
+  "stm32-bare": [
+    {"title": "STM32 for Beginners — HAL Library GPIO", "channel": "YouTube", "id": "2zjeDWI9W7M", "topic": "HAL GPIO"},
+    {"title": "STM32 Guide #2: Registers + HAL (Blink)", "channel": "YouTube", "id": "Hffw-m9fuxc", "topic": "Registres & HAL"},
+    {"title": "KiCad STM32 Hardware Design", "channel": "Phil's Lab", "id": "wLwKgMBWhpY", "topic": "Hardware Design"},
+  ],
+  "ros-intro": [
+    {"title": "Getting Started with ROS 2", "channel": "Articulated Robotics", "id": "8aoFndU7jos", "topic": "Introduction ROS 2"},
+    {"title": "Learn ROS 2: Beginner to Advanced", "channel": "YouTube", "id": "HJAE5Pk8Nyw", "topic": "Cours complet"},
+    {"title": "Solving the problem EVERY robot has (ros2_control)", "channel": "Articulated Robotics", "id": "4QKsDf1c4hc", "topic": "ros2_control"},
+    {"title": "Using ros2_control to drive our robot", "channel": "Articulated Robotics", "id": "4VVrTCnxvSw", "topic": "Contrôle moteurs"},
+  ],
+  "esp32-display": [
+    {"title": "How to Use OLED Displays with ESP32", "channel": "YouTube", "id": "7XdNR2ou_-g", "topic": "OLED SSD1306"},
+    {"title": "SSD1306 I2C OLED display with ESP32 — Adafruit", "channel": "YouTube", "id": "CJmr2vjHhAc", "topic": "I2C OLED"},
+    {"title": "ESP32 with OLED PlatformIO 2025", "channel": "YouTube", "id": "9--A4w01hjs", "topic": "OLED Pratique"},
+    {"title": "How to Build a GUI on SSD1306 with LVGL", "channel": "YouTube", "id": "VMlpGlX5hd4", "topic": "Interface LVGL"},
+  ],
+  "pico-micropython": [
+    {"title": "Raspberry Pi Pico — Getting Started with MicroPython", "channel": "Kevin McAleer", "id": "qYqUJC9z2_E", "topic": "Introduction"},
+    {"title": "Getting Started with MicroPython and the Pico", "channel": "YouTube", "id": "jyfxGpDIYdk", "topic": "MicroPython Bases"},
+    {"title": "Intro to Raspberry Pi Pico and RP2040 — MicroPython Part 1", "channel": "Digi-Key Electronics", "id": "JCk9QaCH5QU", "topic": "RP2040 & GPIO"},
+    {"title": "Raspberry Pi PICO — I2C OLED, ADC, PWM", "channel": "YouTube", "id": "zlKJ5hvfs6s", "topic": "Périphériques"},
+  ],
+  "petit-projets": [
+    {"title": "Arduino Tutorial 1: Setting Up for Absolute Beginners", "channel": "Paul McWhorter", "id": "fJWR7dBuc18", "topic": "Démarrage"},
+    {"title": "Arduino Tutorial 2: Understanding LEDs", "channel": "Paul McWhorter", "id": "9uHZB7-T_XA", "topic": "LEDs"},
+    {"title": "Arduino Tutorial 16: Fun With For Loops", "channel": "Paul McWhorter", "id": "5cd_8AmkI04", "topic": "Boucles & Projets"},
+  ],
+}
+
 COMPONENTS = [
   # ── Microcontrôleurs ──────────────────────────────────────────────────────────
   {"id":"arduino-uno","name":"Arduino Uno","category":"Microcontrôleurs","wokwi":"wokwi-arduino-uno","voltage":"5V","current":"50mA","protocol":"USB / UART","package":"DIP / THT",
@@ -923,9 +973,10 @@ def course_detail(course_id):
     tab = request.args.get("tab", "cours")
     section_idx = int(request.args.get("s", 0))
     section_idx = max(0, min(section_idx, len(content["sections"]) - 1)) if content["sections"] else 0
+    videos = COURSE_VIDEOS.get(course_id, [])
     return render_template("course_detail.html",
         course=course, content=content, progress=progress,
-        tab=tab, section_idx=section_idx)
+        tab=tab, section_idx=section_idx, videos=videos)
 
 @app.route("/components")
 def components():
