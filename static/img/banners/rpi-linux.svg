@@ -1,0 +1,170 @@
+<svg width="1200" height="340" viewBox="0 0 1200 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#0d0808"/>
+      <stop offset="100%" stop-color="#200a0a"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#E53935" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#E53935" stop-opacity="0.3"/>
+    </linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="20"/></filter>
+    <filter id="gf"><feGaussianBlur stdDeviation="5"/></filter>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="14" cy="14" r="1" fill="#E53935" fill-opacity="0.14"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="340" fill="url(#bg)"/>
+  <rect width="1200" height="340" fill="url(#dots)"/>
+  <rect width="1200" height="340" fill="url(#glow)"/>
+  <ellipse cx="920" cy="170" rx="300" ry="200" fill="#E53935" fill-opacity="0.08" filter="url(#blur)"/>
+
+  <!-- Circuit traces -->
+  <line x1="610" y1="80" x2="720" y2="80" stroke="#E53935" stroke-width="1" stroke-opacity="0.2"/>
+  <line x1="720" y1="80" x2="720" y2="115" stroke="#E53935" stroke-width="1" stroke-opacity="0.2"/>
+  <line x1="610" y1="250" x2="750" y2="250" stroke="#E53935" stroke-width="1" stroke-opacity="0.2"/>
+  <circle cx="720" cy="80" r="3" fill="#E53935" fill-opacity="0.45"/>
+
+  <!-- ═══ RASPBERRY PI 4B BOARD ═══ -->
+  <g transform="translate(632, 24)">
+    <!-- PCB (green) -->
+    <rect x="0" y="0" width="450" height="300" rx="10" fill="#0f2210" fill-opacity="0.6" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.5"/>
+    <rect x="4" y="4" width="442" height="292" rx="8" fill="#0a1a0a" fill-opacity="0.4"/>
+
+    <!-- 40-pin GPIO header (top right) -->
+    <rect x="250" y="-10" width="200" height="22" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+    <!-- 20 pairs of pins -->
+    <line x1="260" y1="-10" x2="260" y2="0" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="260" y1="12" x2="260" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="270" y1="-10" x2="270" y2="22" stroke="#ef4444" stroke-width="1.8"/>
+    <line x1="280" y1="-10" x2="280" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="290" y1="-10" x2="290" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="300" y1="-10" x2="300" y2="22" stroke="#fbbf24" stroke-width="1.8"/>
+    <line x1="310" y1="-10" x2="310" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="320" y1="-10" x2="320" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="330" y1="-10" x2="330" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="340" y1="-10" x2="340" y2="22" stroke="#fbbf24" stroke-width="1.8"/>
+    <line x1="350" y1="-10" x2="350" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="360" y1="-10" x2="360" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="370" y1="-10" x2="370" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="380" y1="-10" x2="380" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="390" y1="-10" x2="390" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="400" y1="-10" x2="400" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="410" y1="-10" x2="410" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="420" y1="-10" x2="420" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="430" y1="-10" x2="430" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+    <line x1="440" y1="-10" x2="440" y2="22" stroke="#94a3b8" stroke-width="1.8"/>
+
+    <!-- GPIO label -->
+    <text x="350" y="34" text-anchor="middle" font-family="monospace" font-size="8" fill="#22c55e" fill-opacity="0.7">GPIO 40 pins</text>
+
+    <!-- BCM2711 CPU (large chip) -->
+    <rect x="145" y="95" width="115" height="115" rx="6" fill="#1a1a2e" stroke="#E53935" stroke-width="1.8"/>
+    <!-- CPU die marks -->
+    <rect x="152" y="102" width="101" height="101" rx="3" fill="#14142a"/>
+    <text x="202" y="145" text-anchor="middle" font-family="Arial" font-size="9" font-weight="bold" fill="#E53935">BCM2711</text>
+    <text x="202" y="158" text-anchor="middle" font-family="monospace" font-size="8" fill="#f87171">Cortex-A72</text>
+    <text x="202" y="171" text-anchor="middle" font-family="monospace" font-size="7" fill="#E53935">Quad-core 1.8GHz</text>
+    <!-- CPU pins -->
+    <line x1="133" y1="110" x2="145" y2="110" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="133" y1="122" x2="145" y2="122" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="133" y1="134" x2="145" y2="134" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="133" y1="146" x2="145" y2="146" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="133" y1="158" x2="145" y2="158" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="133" y1="170" x2="145" y2="170" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="133" y1="182" x2="145" y2="182" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="260" y1="110" x2="272" y2="110" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="260" y1="124" x2="272" y2="124" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="260" y1="138" x2="272" y2="138" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="260" y1="152" x2="272" y2="152" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="260" y1="166" x2="272" y2="166" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="260" y1="180" x2="272" y2="180" stroke="#64748b" stroke-width="1.2"/>
+
+    <!-- LPDDR4 RAM (on top of CPU - PoP package) -->
+    <rect x="155" y="87" width="95" height="12" rx="2" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1"/>
+    <text x="202" y="97" text-anchor="middle" font-family="monospace" font-size="7" fill="#3b82f6">8GB LPDDR4</text>
+
+    <!-- USB-C power -->
+    <rect x="-2" y="12" width="20" height="30" rx="4" fill="#1e293b" stroke="#64748b" stroke-width="1.2"/>
+    <rect x="2" y="18" width="12" height="18" rx="2" fill="#0d1421"/>
+    <text x="9" y="52" text-anchor="middle" font-family="monospace" font-size="7" fill="#64748b">USB-C</text>
+
+    <!-- USB 3.0 ports (2 blue) -->
+    <rect x="-2" y="58" width="24" height="26" rx="3" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.2"/>
+    <rect x="2" y="62" width="16" height="18" rx="1" fill="#0d1421"/>
+    <rect x="-2" y="90" width="24" height="26" rx="3" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.2"/>
+    <rect x="2" y="94" width="16" height="18" rx="1" fill="#0d1421"/>
+    <text x="11" y="127" text-anchor="middle" font-family="monospace" font-size="7" fill="#3b82f6">USB 3.0</text>
+
+    <!-- USB 2.0 ports (2 black) -->
+    <rect x="-2" y="132" width="24" height="26" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
+    <rect x="2" y="136" width="16" height="18" rx="1" fill="#0d1421"/>
+    <rect x="-2" y="162" width="24" height="26" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
+    <rect x="2" y="166" width="16" height="18" rx="1" fill="#0d1421"/>
+    <text x="11" y="198" text-anchor="middle" font-family="monospace" font-size="7" fill="#64748b">USB 2.0</text>
+
+    <!-- Ethernet port -->
+    <rect x="-2" y="206" width="28" height="36" rx="3" fill="#1e293b" stroke="#fbbf24" stroke-width="1.2"/>
+    <rect x="2" y="210" width="20" height="28" rx="1" fill="#0d1421"/>
+    <!-- Ethernet LED indicators -->
+    <circle cx="4" cy="212" r="2" fill="#22c55e"/>
+    <circle cx="4" cy="220" r="2" fill="#fbbf24"/>
+    <text x="13" y="252" text-anchor="middle" font-family="monospace" font-size="7" fill="#fbbf24">ETH</text>
+
+    <!-- HDMI ports (2x micro HDMI) -->
+    <rect x="330" y="278" width="30" height="14" rx="2" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+    <rect x="334" y="281" width="22" height="8" rx="1" fill="#0d1421"/>
+    <rect x="368" y="278" width="30" height="14" rx="2" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+    <rect x="372" y="281" width="22" height="8" rx="1" fill="#0d1421"/>
+    <text x="363" y="306" text-anchor="middle" font-family="monospace" font-size="7" fill="#64748b">micro HDMI</text>
+
+    <!-- Audio jack -->
+    <circle cx="290" cy="291" r="10" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+    <circle cx="290" cy="291" r="5" fill="#0d1421"/>
+
+    <!-- MicroSD slot -->
+    <rect x="140" y="292" width="55" height="12" rx="3" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+    <text x="167" y="314" text-anchor="middle" font-family="monospace" font-size="7" fill="#64748b">microSD</text>
+
+    <!-- WiFi/BT chip -->
+    <rect x="310" y="90" width="80" height="60" rx="4" fill="#1a1a2e" stroke="#3b82f6" stroke-width="1.2"/>
+    <text x="350" y="116" text-anchor="middle" font-family="monospace" font-size="8" fill="#3b82f6">CYW43455</text>
+    <text x="350" y="128" text-anchor="middle" font-family="monospace" font-size="7" fill="#64748b">WiFi 5GHz</text>
+    <text x="350" y="140" text-anchor="middle" font-family="monospace" font-size="7" fill="#64748b">BT 5.0</text>
+
+    <!-- Power LED -->
+    <circle cx="420" cy="270" r="5" fill="#ef4444" fill-opacity="0.9"/>
+    <circle cx="420" cy="270" r="5" fill="#ef4444" filter="url(#gf)"/>
+    <text x="420" y="286" text-anchor="middle" font-family="monospace" font-size="7" fill="#ef4444">PWR</text>
+
+    <!-- Activity LED -->
+    <circle cx="405" cy="270" r="5" fill="#22c55e" fill-opacity="0.7"/>
+    <text x="405" y="286" text-anchor="middle" font-family="monospace" font-size="7" fill="#22c55e">ACT</text>
+
+    <!-- Board label -->
+    <text x="202" y="225" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#E53935" fill-opacity="0.5">Raspberry Pi 4 Model B</text>
+  </g>
+
+  <!-- ═══ TEXT ═══ -->
+  <rect x="54" y="52" width="116" height="26" rx="13" fill="#E53935" fill-opacity="0.2" stroke="#E53935" stroke-width="1" stroke-opacity="0.6"/>
+  <text x="112" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#fca5a5">Raspberry Pi</text>
+
+  <rect x="180" y="52" width="108" height="26" rx="13" fill="#fbbf24" fill-opacity="0.18" stroke="#fbbf24" stroke-width="1" stroke-opacity="0.5"/>
+  <text x="234" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#fde68a">Intermédiaire</text>
+
+  <text x="54" y="138" font-family="Arial, sans-serif" font-size="38" font-weight="800" fill="white">Raspberry Pi</text>
+  <text x="54" y="186" font-family="Arial, sans-serif" font-size="38" font-weight="800" fill="#f87171">&amp; Linux embarqué</text>
+
+  <text x="54" y="224" font-family="Arial, sans-serif" font-size="16" fill="#94a3b8">Python · GPIO · Flask · OpenCV</text>
+  <text x="54" y="246" font-family="Arial, sans-serif" font-size="16" fill="#94a3b8">Linux · Docker · Domotique</text>
+
+  <rect x="54"  y="276" width="90"  height="28" rx="8" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="99"  y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#64748b">9 sections</text>
+  <rect x="154" y="276" width="60"  height="28" rx="8" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="184" y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#64748b">5h</text>
+  <rect x="224" y="276" width="120" height="28" rx="8" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="284" y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#64748b">Cortex-A72 4x</text>
+
+  <text x="1154" y="326" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#334155">CognitoLab</text>
+</svg>

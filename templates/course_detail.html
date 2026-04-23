@@ -60,6 +60,14 @@
 @media(max-width:768px) { .course-layout { grid-template-columns:1fr; } .section-sidebar { position:static; } .video-list { grid-template-columns:1fr 1fr; } }
 </style>
 
+<!-- Course banner -->
+<div style="width:100%;border-radius:16px;overflow:hidden;margin-bottom:20px;position:relative">
+  <img src="/static/img/banners/{{ course.id }}.svg"
+       alt="{{ course.title }}"
+       style="width:100%;height:auto;display:block;border-radius:16px"
+       onerror="this.style.display='none'">
+</div>
+
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
   <a href="/courses" class="btn-ghost" style="font-size:0.8rem;padding:6px 12px">← Cours</a>
   <span style="color:#334155">›</span>
